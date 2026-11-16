@@ -3,59 +3,65 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ELF SO Web Analyzer</title>
-
-<script src="https://cdn.jsdelivr.net/pyodide/v0.27.5/full/pyodide.js"></script>
+<title>ELF SO Analyzer - JavaScript Only</title>
 
 <style>
 :root {
   --bg: #080c12;
   --panel: #111923;
   --panel2: #182432;
+  --panel3: #0a1118;
   --border: #2b3b4c;
   --text: #eaf1f7;
-  --muted: #93a2b2;
-  --green: #37dc87;
-  --blue: #55adff;
-  --yellow: #e8c15d;
-  --red: #ff6262;
-  --orange: #ff9e4d;
-  --purple: #bf88ff;
+  --muted: #91a1b2;
+  --green: #38dc88;
+  --blue: #56adff;
+  --yellow: #e7c15c;
+  --red: #ff6464;
+  --orange: #ff9d4d;
+  --purple: #bd87ff;
+  --cyan: #63e4e4;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
+  min-height: 100%;
   background: var(--bg);
   color: var(--text);
   font-family: Tahoma, Arial, sans-serif;
 }
 
+body {
+  direction: rtl;
+}
+
 .app {
-  max-width: 1800px;
+  width: min(1900px, 100%);
   margin: auto;
-  padding: 12px;
+  padding: 10px;
 }
 
 header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 15px;
   flex-wrap: wrap;
-  padding: 17px;
+  padding: 16px;
   border: 1px solid var(--border);
   border-radius: 13px;
-  background: linear-gradient(120deg, #122130, #0e171f);
+  background: linear-gradient(120deg, #122231, #0e171f);
 }
 
 h1 {
   margin: 0;
   color: var(--green);
-  font-size: 23px;
+  font-size: 24px;
 }
 
 .subtitle {
@@ -64,53 +70,55 @@ h1 {
   font-size: 12px;
 }
 
-.file-button,
-button {
-  display: inline-block;
+button,
+.file-label {
   padding: 10px 13px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  cursor: pointer;
+  background: var(--panel2);
+  color: var(--text);
   font: inherit;
+  cursor: pointer;
 }
 
-.file-button {
+button:hover,
+button.active,
+.file-label:hover {
+  border-color: var(--green);
+  background: var(--green);
+  color: #06110a;
+}
+
+.file-label {
+  display: inline-block;
   background: var(--green);
   color: #06110a;
   font-weight: bold;
 }
 
-.file-button input {
+.file-label input {
   display: none;
 }
 
-button {
-  background: var(--panel2);
-  color: var(--text);
-}
-
-button:hover,
-button.active {
-  background: var(--green);
-  color: #06110a;
-}
-
+.notice,
 .status {
-  min-height: 24px;
   margin: 10px 2px;
-  color: var(--yellow);
+  padding: 10px;
+  border-radius: 8px;
   overflow-wrap: anywhere;
 }
 
 .notice {
-  margin: 10px 0;
-  padding: 11px;
   border: 1px solid #695828;
-  border-radius: 8px;
   background: #282313;
-  color: #f3db8a;
+  color: #f1d982;
   font-size: 12px;
   line-height: 1.7;
+}
+
+.status {
+  min-height: 24px;
+  color: var(--yellow);
 }
 
 .toolbar {
@@ -123,23 +131,29 @@ button.active {
 
 #search {
   flex: 1;
-  min-width: 210px;
+  min-width: 230px;
   padding: 11px;
   border: 1px solid var(--border);
   border-radius: 8px;
   outline: none;
   background: var(--panel);
   color: var(--text);
+  direction: rtl;
+}
+
+#search:focus {
+  border-color: var(--green);
 }
 
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
   gap: 8px;
   margin-bottom: 10px;
 }
 
 .card {
+  min-width: 0;
   padding: 12px 8px;
   border: 1px solid var(--border);
   border-radius: 9px;
@@ -162,7 +176,7 @@ button.active {
 
 .layout {
   display: grid;
-  grid-template-columns: 330px minmax(350px, 1fr) 430px;
+  grid-template-columns: 350px minmax(360px, 1fr) 450px;
   gap: 10px;
 }
 
@@ -176,6 +190,7 @@ button.active {
 
 .panel-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 11px;
@@ -189,11 +204,11 @@ button.active {
 }
 
 .list {
-  max-height: 710px;
+  max-height: 730px;
   overflow: auto;
 }
 
-.item {
+.list-item {
   padding: 10px;
   border-bottom: 1px solid #243240;
   cursor: pointer;
@@ -202,13 +217,14 @@ button.active {
   overflow-wrap: anywhere;
 }
 
-.item:hover,
-.item.selected {
+.list-item:hover,
+.list-item.selected {
   border-right: 3px solid var(--green);
   background: #203548;
 }
 
 .item-name {
+  color: var(--text);
   font-family: Consolas, monospace;
   font-size: 12px;
 }
@@ -241,7 +257,7 @@ button.active {
 
 .yellow {
   background: var(--yellow);
-  color: #1d1605;
+  color: #1b1504;
 }
 
 .red {
@@ -251,12 +267,17 @@ button.active {
 
 .orange {
   background: var(--orange);
-  color: #2a1605;
+  color: #291507;
 }
 
 .purple {
   background: var(--purple);
-  color: #190b2c;
+  color: #180a2c;
+}
+
+.cyan {
+  background: var(--cyan);
+  color: #061515;
 }
 
 .empty {
@@ -266,18 +287,18 @@ button.active {
 }
 
 .graph {
-  min-height: 550px;
-  max-height: 710px;
+  min-height: 570px;
+  max-height: 730px;
   padding: 12px;
   overflow: auto;
-  background: radial-gradient(circle, #182b3d, #0b1219 75%);
+  background: radial-gradient(circle, #182d40, #0b1219 75%);
 }
 
 .graph-title {
   margin-bottom: 12px;
+  color: var(--yellow);
   direction: ltr;
   text-align: left;
-  color: var(--yellow);
   font-family: Consolas, monospace;
 }
 
@@ -291,27 +312,28 @@ button.active {
   direction: ltr;
 }
 
-.node {
-  max-width: 270px;
+.graph-node {
+  max-width: 280px;
   padding: 9px;
   border: 1px solid var(--blue);
   border-radius: 8px;
   background: #17354a;
   color: var(--text);
+  direction: ltr;
+  text-align: center;
   font-family: Consolas, monospace;
   font-size: 11px;
-  text-align: center;
   overflow-wrap: anywhere;
 }
 
-.node.main {
+.graph-node.main {
   border-color: var(--green);
   background: #16402b;
 }
 
-.node.caller {
+.graph-node.caller {
   border-color: var(--purple);
-  background: #3e2648;
+  background: #3d2748;
 }
 
 .arrow {
@@ -324,11 +346,11 @@ button.active {
   line-height: 1.7;
 }
 
-.section {
-  margin-bottom: 16px;
+.details-section {
+  margin-bottom: 17px;
 }
 
-.section-title {
+.details-title {
   margin-bottom: 7px;
   padding-bottom: 5px;
   border-bottom: 1px solid var(--border);
@@ -338,7 +360,7 @@ button.active {
 
 .kv {
   display: grid;
-  grid-template-columns: 125px 1fr;
+  grid-template-columns: 130px 1fr;
   gap: 5px;
 }
 
@@ -360,7 +382,7 @@ code {
 }
 
 pre {
-  max-height: 330px;
+  max-height: 360px;
   margin: 0;
   padding: 10px;
   overflow: auto;
@@ -368,13 +390,13 @@ pre {
   word-break: break-word;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #090f15;
-  color: #bfd6e7;
+  background: var(--panel3);
+  color: #bed5e6;
   font-size: 11px;
 }
 
 .detail-list {
-  max-height: 260px;
+  max-height: 280px;
   overflow: auto;
 }
 
@@ -403,9 +425,22 @@ pre {
   background: linear-gradient(90deg, var(--green), var(--yellow), var(--red));
 }
 
-@media(max-width:1200px) {
+.section-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.small {
+  padding: 7px 9px;
+  font-size: 11px;
+}
+
+@media(max-width:1250px) {
   .layout {
-    grid-template-columns: 310px 1fr;
+    grid-template-columns: 320px 1fr;
   }
 
   .right-panel {
@@ -431,7 +466,7 @@ pre {
   }
 
   .kv {
-    grid-template-columns: 100px 1fr;
+    grid-template-columns: 105px 1fr;
   }
 }
 </style>
@@ -444,44 +479,44 @@ pre {
   <div>
     <h1>ELF / SO Analyzer</h1>
     <div class="subtitle">
-      تحليل المكتبة مباشرة داخل المتصفح
+      JavaScript فقط — يعمل مباشرة داخل المتصفح
     </div>
   </div>
 
-  <label class="file-button">
-    اختيار ملف SO / ELF
-    <input id="elfFile" type="file" accept=".so,.elf,application/octet-stream">
+  <label class="file-label">
+    اختيار مكتبة SO / ELF
+    <input id="fileInput" type="file" accept=".so,.elf,application/octet-stream">
   </label>
 </header>
 
-<div id="notice" class="notice">
-  جاري تجهيز Python داخل المتصفح...
+<div class="notice">
+  هذا الموقع لا يحتاج Python ولا ملفات إضافية. اختر مكتبة ELF أو SO من جهازك، وسيتم تحليلها محليًا داخل المتصفح بدون رفع الملف إلى أي سيرفر.
 </div>
 
 <div id="status" class="status">
-  انتظر تحميل المحلل.
+  جاهز. اختر ملف SO أو ELF.
 </div>
 
 <div class="toolbar">
-  <input id="search" placeholder="ابحث عن دالة أو RVA أو API أو String">
+  <input id="search" type="search" placeholder="ابحث عن اسم دالة أو RVA أو String أو API">
 
-  <button class="mode active" data-mode="protection">
-    الحماية
+  <button class="mode-button active" data-mode="protection">
+    الحمايات
   </button>
 
-  <button class="mode" data-mode="crash">
-    الكراش
+  <button class="mode-button" data-mode="crash">
+    أسباب الكراش
   </button>
 
-  <button class="mode" data-mode="related">
+  <button class="mode-button" data-mode="related">
     Related
   </button>
 
-  <button class="mode" data-mode="all">
+  <button class="mode-button" data-mode="all">
     كل الدوال
   </button>
 
-  <button id="clear">
+  <button id="clearButton">
     مسح التحديد
   </button>
 </div>
@@ -489,32 +524,42 @@ pre {
 <div class="cards">
   <div class="card">
     <div class="card-label">الملف</div>
-    <div id="fileName" class="card-value">-</div>
+    <div id="cardFile" class="card-value">-</div>
   </div>
 
   <div class="card">
     <div class="card-label">المعمارية</div>
-    <div id="arch" class="card-value">-</div>
+    <div id="cardArch" class="card-value">-</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">الحجم</div>
+    <div id="cardSize" class="card-value">0</div>
   </div>
 
   <div class="card">
     <div class="card-label">كل الدوال</div>
-    <div id="total" class="card-value">0</div>
+    <div id="cardTotal" class="card-value">0</div>
   </div>
 
   <div class="card">
-    <div class="card-label">الحماية</div>
-    <div id="protection" class="card-value">0</div>
+    <div class="card-label">الحمايات</div>
+    <div id="cardProtection" class="card-value">0</div>
   </div>
 
   <div class="card">
     <div class="card-label">الكراش</div>
-    <div id="crash" class="card-value">0</div>
+    <div id="cardCrash" class="card-value">0</div>
   </div>
 
   <div class="card">
-    <div class="card-label">Related</div>
-    <div id="related" class="card-value">0</div>
+    <div class="card-label">Strings</div>
+    <div id="cardStrings" class="card-value">0</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Imports</div>
+    <div id="cardImports" class="card-value">0</div>
   </div>
 </div>
 
@@ -522,29 +567,47 @@ pre {
 
 <section class="panel">
   <div class="panel-header">
-    <span id="listTitle" class="panel-title">الحماية</span>
+    <span id="listTitle" class="panel-title">الحمايات</span>
     <span id="listCount" class="badge green">0</span>
   </div>
 
+  <div class="section-tabs">
+    <button class="small scan-tab active" data-scan="functions">
+      Functions
+    </button>
+
+    <button class="small scan-tab" data-scan="strings">
+      Strings
+    </button>
+
+    <button class="small scan-tab" data-scan="imports">
+      Imports
+    </button>
+
+    <button class="small scan-tab" data-scan="sections">
+      Sections
+    </button>
+  </div>
+
   <div id="list" class="list">
-    <div class="empty">لم يتم تحليل أي ملف.</div>
+    <div class="empty">لم يتم تحليل أي مكتبة.</div>
   </div>
 </section>
 
 <section class="panel">
   <div class="panel-header">
-    <span class="panel-title">العلاقات</span>
-    <span class="badge yellow">Callers / Callees</span>
+    <span class="panel-title">العلاقات والنتائج</span>
+    <span class="badge yellow">Callers / Callees / Evidence</span>
   </div>
 
   <div id="graph" class="graph">
-    <div class="empty">اختر دالة لعرض العلاقات.</div>
+    <div class="empty">اختر دالة من القائمة.</div>
   </div>
 </section>
 
 <section class="panel right-panel">
   <div class="panel-header">
-    <span class="panel-title">التفاصيل</span>
+    <span class="panel-title">تفاصيل التحليل</span>
   </div>
 
   <div id="details">
@@ -558,11 +621,15 @@ pre {
 <script>
 "use strict";
 
-let pyodide = null;
-let report = null;
-let currentMode = "protection";
-let selected = null;
-let visibleItems = [];
+const state = {
+  bytes: null,
+  file: null,
+  elf: null,
+  mode: "protection",
+  scan: "functions",
+  selected: null,
+  visible: []
+};
 
 const $ = id => document.getElementById(id);
 
@@ -583,22 +650,1484 @@ function safe(value, fallback = "-") {
       : String(value);
 }
 
-function hex(value) {
-  const number = Number(value);
-
-  if (!Number.isFinite(number)) {
-    return safe(value);
-  }
-
-  return "0x" +
-    number.toString(16).toUpperCase().padStart(6, "0");
-}
-
 function setStatus(text, error = false) {
   $("status").textContent = text;
   $("status").style.color = error
     ? "var(--red)"
     : "var(--yellow)";
+}
+
+function hex(value, width = 8) {
+  const n = Number(value);
+
+  if (!Number.isFinite(n)) {
+    return safe(value);
+  }
+
+  return "0x" + n.toString(16).toUpperCase().padStart(width, "0");
+}
+
+function readU8(bytes, offset) {
+  return bytes[offset] ?? 0;
+}
+
+function readU16(bytes, offset, little) {
+  if (offset < 0 || offset + 2 > bytes.length) {
+    return 0;
+  }
+
+  const view = new DataView(
+    bytes.buffer,
+    bytes.byteOffset,
+    bytes.byteLength
+  );
+
+  return view.getUint16(offset, little);
+}
+
+function readU32(bytes, offset, little) {
+  if (offset < 0 || offset + 4 > bytes.length) {
+    return 0;
+  }
+
+  const view = new DataView(
+    bytes.buffer,
+    bytes.byteOffset,
+    bytes.byteLength
+  );
+
+  return view.getUint32(offset, little);
+}
+
+function readU64(bytes, offset, little) {
+  if (offset < 0 || offset + 8 > bytes.length) {
+    return 0;
+  }
+
+  const view = new DataView(
+    bytes.buffer,
+    bytes.byteOffset,
+    bytes.byteLength
+  );
+
+  const low = view.getUint32(offset + (little ? 0 : 4), little);
+  const high = view.getUint32(offset + (little ? 4 : 0), little);
+
+  return high * 4294967296 + low;
+}
+
+function readString(bytes, offset, max = 1000) {
+  if (
+    !Number.isFinite(offset) ||
+    offset < 0 ||
+    offset >= bytes.length
+  ) {
+    return "";
+  }
+
+  const end = Math.min(
+    bytes.length,
+    offset + max
+  );
+
+  let output = "";
+
+  for (let i = offset; i < end; i++) {
+    const value = bytes[i];
+
+    if (value === 0) {
+      break;
+    }
+
+    output += String.fromCharCode(
+      value >= 32 && value <= 126
+        ? value
+        : 46
+    );
+  }
+
+  return output;
+}
+
+function decodeAscii(bytes, start, end) {
+  let value = "";
+
+  for (
+    let i = Math.max(0, start);
+    i < Math.min(bytes.length, end);
+    i++
+  ) {
+    const ch = bytes[i];
+
+    if (ch < 32 || ch > 126) {
+      return "";
+    }
+
+    value += String.fromCharCode(ch);
+  }
+
+  return value;
+}
+
+function printableStrings(bytes, minLength = 4) {
+  const output = [];
+  let start = -1;
+
+  for (let i = 0; i <= bytes.length; i++) {
+    const value = i < bytes.length ? bytes[i] : 0;
+    const printable = value >= 32 && value <= 126;
+
+    if (printable && start < 0) {
+      start = i;
+    }
+
+    if ((!printable || i === bytes.length) && start >= 0) {
+      const length = i - start;
+
+      if (length >= minLength) {
+        const text = decodeAscii(
+          bytes,
+          start,
+          i
+        );
+
+        if (text) {
+          output.push({
+            offset: start,
+            text
+          });
+        }
+      }
+
+      start = -1;
+    }
+  }
+
+  return output;
+}
+
+function architecture(machine, elfClass) {
+  const names = {
+    0x28: "ARM32",
+    0x3E: "x86_64",
+    0xB7: "AArch64",
+    0x03: "x86",
+    0x08: "MIPS",
+    0xF3: "RISC-V"
+  };
+
+  return (
+    names[machine] ||
+    "Machine " + hex(machine, 4) +
+    " / ELF" + (elfClass === 2 ? "64" : "32")
+  );
+}
+
+function sectionTypeName(type) {
+  const names = {
+    0: "NULL",
+    1: "PROGBITS",
+    2: "SYMTAB",
+    3: "STRTAB",
+    4: "RELA",
+    5: "HASH",
+    6: "DYNAMIC",
+    7: "NOTE",
+    8: "NOBITS",
+    9: "REL",
+    11: "DYNSYM",
+    14: "INIT_ARRAY",
+    15: "FINI_ARRAY",
+    0x6ffffff6: "GNU_HASH",
+    0x6ffffffd: "VERDEF",
+    0x6ffffffe: "VERNEED",
+    0x6fffffff: "VERSYM"
+  };
+
+  return names[type] || hex(type);
+}
+
+function sectionFlags(flags) {
+  let output = "";
+
+  if (flags & 1) output += "W";
+  if (flags & 2) output += "A";
+  if (flags & 4) output += "X";
+
+  return output || "-";
+}
+
+function symbolBind(info) {
+  const value = info >> 4;
+
+  return {
+    0: "LOCAL",
+    1: "GLOBAL",
+    2: "WEAK"
+  }[value] || "OTHER";
+}
+
+function symbolType(info) {
+  const value = info & 0x0F;
+
+  return {
+    0: "NOTYPE",
+    1: "OBJECT",
+    2: "FUNC",
+    3: "SECTION",
+    4: "FILE",
+    6: "TLS",
+    10: "IFUNC"
+  }[value] || "OTHER";
+}
+
+function alignName(name) {
+  const value = String(name || "").trim();
+
+  if (!value) {
+    return "sub_unknown";
+  }
+
+  return value;
+}
+
+function createElfParser(bytes, fileName) {
+  if (
+    bytes.length < 64 ||
+    bytes[0] !== 0x7F ||
+    bytes[1] !== 0x45 ||
+    bytes[2] !== 0x4C ||
+    bytes[3] !== 0x46
+  ) {
+    throw new Error("الملف ليس ELF أو SO صالحًا.");
+  }
+
+  const elfClass = bytes[4];
+  const dataEncoding = bytes[5];
+
+  if (elfClass !== 1 && elfClass !== 2) {
+    throw new Error("صيغة ELF غير مدعومة.");
+  }
+
+  if (dataEncoding !== 1 && dataEncoding !== 2) {
+    throw new Error("ترتيب البايتات غير مدعوم.");
+  }
+
+  const little = dataEncoding === 1;
+  const is64 = elfClass === 2;
+
+  const machine = readU16(bytes, 18, little);
+  const entry = is64
+    ? readU64(bytes, 24, little)
+    : readU32(bytes, 24, little);
+
+  const phoff = is64
+    ? readU64(bytes, 32, little)
+    : readU32(bytes, 28, little);
+
+  const shoff = is64
+    ? readU64(bytes, 40, little)
+    : readU32(bytes, 32, little);
+
+  const phentsize = readU16(bytes, is64 ? 54 : 42, little);
+  const phnum = readU16(bytes, is64 ? 56 : 44, little);
+  const shentsize = readU16(bytes, is64 ? 58 : 46, little);
+  const shnum = readU16(bytes, is64 ? 60 : 48, little);
+  const shstrndx = readU16(bytes, is64 ? 62 : 50, little);
+
+  const parser = {
+    bytes,
+    fileName,
+    is64,
+    little,
+    elfClass,
+    machine,
+    arch: architecture(machine, elfClass),
+    entry,
+    phoff,
+    phentsize,
+    phnum,
+    shoff,
+    shentsize,
+    shnum,
+    shstrndx,
+    sections: [],
+    segments: [],
+    symbols: [],
+    imports: [],
+    exports: [],
+    strings: [],
+    functions: [],
+    protection: [],
+    crash: [],
+    related: [],
+    readAddr(offset) {
+      return this.is64
+        ? readU64(this.bytes, offset, this.little)
+        : readU32(this.bytes, offset, this.little);
+    },
+    readOffset(offset) {
+      return this.is64
+        ? readU64(this.bytes, offset, this.little)
+        : readU32(this.bytes, offset, this.little);
+    },
+    rvaToOffset(rva) {
+      const section = this.sections.find(section =>
+        rva >= section.addr &&
+        rva < section.addr + Math.max(section.size, section.fileSize)
+      );
+
+      if (!section) {
+        return 0;
+      }
+
+      return section.offset + (rva - section.addr);
+    }
+  };
+
+  parseProgramHeaders(parser);
+  parseSections(parser);
+  parseSymbols(parser);
+  parser.strings = printableStrings(bytes);
+
+  detectFunctions(parser);
+  analyzeFunctions(parser);
+
+  return parser;
+}
+
+function parseProgramHeaders(parser) {
+  const {
+    bytes,
+    little,
+    is64,
+    phoff,
+    phentsize,
+    phnum
+  } = parser;
+
+  for (let i = 0; i < phnum; i++) {
+    const offset = phoff + i * phentsize;
+
+    if (offset + phentsize > bytes.length) {
+      break;
+    }
+
+    const type = readU32(bytes, offset, little);
+
+    const flags = is64
+      ? readU32(bytes, offset + 4, little)
+      : readU32(bytes, offset + 24, little);
+
+    const segmentOffset = is64
+      ? readU64(bytes, offset + 8, little)
+      : readU32(bytes, offset + 4, little);
+
+    const virtualAddress = is64
+      ? readU64(bytes, offset + 16, little)
+      : readU32(bytes, offset + 8, little);
+
+    const fileSize = is64
+      ? readU64(bytes, offset + 32, little)
+      : readU32(bytes, offset + 16, little);
+
+    const memorySize = is64
+      ? readU64(bytes, offset + 40, little)
+      : readU32(bytes, offset + 20, little);
+
+    parser.segments.push({
+      index: i,
+      type,
+      flags,
+      offset: segmentOffset,
+      addr: virtualAddress,
+      fileSize,
+      memorySize,
+      executable: Boolean(flags & 1),
+      writable: Boolean(flags & 2),
+      readable: Boolean(flags & 4)
+    });
+  }
+}
+
+function parseSections(parser) {
+  const {
+    bytes,
+    little,
+    is64,
+    shoff,
+    shentsize,
+    shnum
+  } = parser;
+
+  const raw = [];
+
+  for (let i = 0; i < shnum; i++) {
+    const offset = shoff + i * shentsize;
+
+    if (offset + shentsize > bytes.length) {
+      break;
+    }
+
+    const nameOffset = readU32(bytes, offset, little);
+    const type = readU32(bytes, offset + 4, little);
+
+    const flags = is64
+      ? readU64(bytes, offset + 8, little)
+      : readU32(bytes, offset + 8, little);
+
+    const addr = is64
+      ? readU64(bytes, offset + 16, little)
+      : readU32(bytes, offset + 12, little);
+
+    const sectionOffset = is64
+      ? readU64(bytes, offset + 24, little)
+      : readU32(bytes, offset + 16, little);
+
+    const size = is64
+      ? readU64(bytes, offset + 32, little)
+      : readU32(bytes, offset + 20, little);
+
+    const link = readU32(
+      bytes,
+      offset + (is64 ? 40 : 24),
+      little
+    );
+
+    const info = readU32(
+      bytes,
+      offset + (is64 ? 44 : 28),
+      little
+    );
+
+    const entsize = is64
+      ? readU64(bytes, offset + 56, little)
+      : readU32(bytes, offset + 36, little);
+
+    raw.push({
+      index: i,
+      nameOffset,
+      type,
+      flags,
+      addr,
+      offset: sectionOffset,
+      size,
+      fileSize: size,
+      link,
+      info,
+      entsize,
+      name: ""
+    });
+  }
+
+  const stringSection = raw[parser.shstrndx];
+
+  if (stringSection) {
+    for (const section of raw) {
+      section.name = readString(
+        bytes,
+        stringSection.offset + section.nameOffset,
+        300
+      );
+    }
+  }
+
+  parser.sections = raw.map(section => ({
+    ...section,
+    typeName: sectionTypeName(section.type),
+    flagsText: sectionFlags(section.flags),
+    executable: Boolean(section.flags & 4),
+    writable: Boolean(section.flags & 1),
+    alloc: Boolean(section.flags & 2)
+  }));
+}
+
+function findSection(parser, names) {
+  return parser.sections.find(section =>
+    names.includes(section.name)
+  );
+}
+
+function parseSymbols(parser) {
+  const { bytes, little, is64 } = parser;
+
+  for (const table of parser.sections) {
+    if (table.type !== 2 && table.type !== 11) {
+      continue;
+    }
+
+    const stringTable = parser.sections[table.link];
+
+    if (!stringTable) {
+      continue;
+    }
+
+    const entrySize = table.entsize ||
+      (is64 ? 24 : 16);
+
+    if (!entrySize) {
+      continue;
+    }
+
+    const count = Math.floor(
+      table.size / entrySize
+    );
+
+    for (let i = 0; i < count; i++) {
+      const offset = table.offset + i * entrySize;
+
+      if (
+        offset < 0 ||
+        offset + entrySize > bytes.length
+      ) {
+        break;
+      }
+
+      const nameOffset = readU32(bytes, offset, little);
+
+      let info;
+      let other;
+      let sectionIndex;
+      let value;
+      let size;
+
+      if (is64) {
+        info = readU8(bytes, offset + 4);
+        other = readU8(bytes, offset + 5);
+        sectionIndex = readU16(bytes, offset + 6, little);
+        value = readU64(bytes, offset + 8, little);
+        size = readU64(bytes, offset + 16, little);
+      } else {
+        value = readU32(bytes, offset + 4, little);
+        size = readU32(bytes, offset + 8, little);
+        info = readU8(bytes, offset + 12);
+        other = readU8(bytes, offset + 13);
+        sectionIndex = readU16(bytes, offset + 14, little);
+      }
+
+      const name = readString(
+        bytes,
+        stringTable.offset + nameOffset,
+        400
+      );
+
+      const symbol = {
+        index: i,
+        name,
+        value,
+        size,
+        info,
+        other,
+        sectionIndex,
+        bind: symbolBind(info),
+        type: symbolType(info),
+        table: table.name
+      };
+
+      parser.symbols.push(symbol);
+
+      if (
+        name &&
+        value === 0 &&
+        (symbol.bind === "GLOBAL" ||
+          symbol.bind === "WEAK")
+      ) {
+        parser.imports.push(symbol);
+      }
+
+      if (
+        name &&
+        value !== 0 &&
+        symbol.type === "FUNC"
+      ) {
+        parser.exports.push(symbol);
+      }
+    }
+  }
+
+  parser.imports = uniqueByName(parser.imports);
+  parser.exports = uniqueByName(parser.exports);
+}
+
+function uniqueByName(items) {
+  const map = new Map();
+
+  for (const item of items) {
+    if (!map.has(item.name)) {
+      map.set(item.name, item);
+    }
+  }
+
+  return [...map.values()];
+}
+
+function isCodeSection(section) {
+  return Boolean(
+    section &&
+    section.executable &&
+    section.size > 0
+  );
+}
+
+function detectFunctions(parser) {
+  const symbols = parser.symbols
+    .filter(symbol =>
+      symbol.type === "FUNC" &&
+      symbol.value > 0
+    )
+    .map(symbol => ({
+      name: alignName(symbol.name),
+      rva: symbol.value,
+      size: symbol.size || 0,
+      source: symbol.table || "symbol",
+      symbol
+    }));
+
+  const starts = new Map();
+
+  for (const item of symbols) {
+    if (!starts.has(item.rva)) {
+      starts.set(item.rva, item);
+    }
+  }
+
+  const codeSections = parser.sections
+    .filter(isCodeSection);
+
+  for (const section of codeSections) {
+    const maxScan = Math.min(
+      section.size,
+      16 * 1024 * 1024
+    );
+
+    const step = parser.arch === "AArch64"
+      ? 4
+      : 1;
+
+    for (
+      let offset = section.offset;
+      offset < section.offset + maxScan;
+      offset += step
+    ) {
+      if (parser.arch === "AArch64") {
+        const word = readU32(
+          parser.bytes,
+          offset,
+          parser.little
+        );
+
+        if (!looksLikeArm64FunctionStart(word)) {
+          continue;
+        }
+      } else {
+        if (!looksLikeGenericFunctionStart(
+          parser.bytes,
+          offset
+        )) {
+          continue;
+        }
+      }
+
+      const rva = section.addr +
+        (offset - section.offset);
+
+      if (!starts.has(rva)) {
+        starts.set(rva, {
+          name: "sub_" + rva.toString(16),
+          rva,
+          size: 0,
+          source: "heuristic",
+          symbol: null
+        });
+      }
+
+      if (starts.size > 12000) {
+        break;
+      }
+    }
+  }
+
+  const sorted = [...starts.values()]
+    .sort((a, b) => a.rva - b.rva);
+
+  for (let i = 0; i < sorted.length; i++) {
+    const item = sorted[i];
+    const next = sorted[i + 1];
+
+    if (!item.size) {
+      const section = parser.sections.find(section =>
+        item.rva >= section.addr &&
+        item.rva < section.addr + section.size
+      );
+
+      const sectionEnd = section
+        ? section.addr + section.size
+        : item.rva + 4;
+
+      item.size = Math.max(
+        4,
+        Math.min(
+          next ? next.rva : sectionEnd,
+          sectionEnd
+        ) - item.rva
+      );
+    }
+
+    item.offset = parser.rvaToOffset(item.rva);
+    item.end = item.rva + item.size;
+    item.section = parser.sections.find(section =>
+      item.rva >= section.addr &&
+      item.rva < section.addr + section.size
+    )?.name || "-";
+  }
+
+  parser.functions = sorted;
+}
+
+function looksLikeArm64FunctionStart(word) {
+  const stpFpLr =
+    (word & 0xFFC07FFF) === 0xA9807BFD;
+
+  const subSp =
+    (word & 0xFF8003FF) === 0xD10003FF;
+
+  const pac =
+    word === 0xD503233F ||
+    word === 0xD503231F ||
+    word === 0xD503211F ||
+    word === 0xD503215F;
+
+  const bti =
+    (word & 0xFFFFFF1F) === 0xD503241F;
+
+  return stpFpLr || subSp || pac || bti;
+}
+
+function looksLikeGenericFunctionStart(bytes, offset) {
+  const a = readU8(bytes, offset);
+  const b = readU8(bytes, offset + 1);
+  const c = readU8(bytes, offset + 2);
+  const d = readU8(bytes, offset + 3);
+
+  const x86Push =
+    a === 0x55 &&
+    b === 0x48 &&
+    c === 0x89 &&
+    d === 0xE5;
+
+  const armPush =
+    a === 0x2D &&
+    b === 0xE9;
+
+  return x86Push || armPush;
+}
+
+function containsAny(text, words) {
+  const value = String(text || "").toLowerCase();
+
+  return words.some(word =>
+    value.includes(word.toLowerCase())
+  );
+}
+
+const protectionWords = [
+  "ptrace",
+  "prctl",
+  "tracerpid",
+  "anti",
+  "debug",
+  "frida",
+  "xposed",
+  "magisk",
+  "root",
+  "hook",
+  "mprotect",
+  "processvm",
+  "memfd",
+  "seccomp",
+  "integrity",
+  "tamper",
+  "obfus",
+  "encrypt",
+  "decrypt",
+  "checksum",
+  "verify",
+  "signature",
+  "debugger",
+  "emulator",
+  "virtual"
+];
+
+const crashWords = [
+  "sigaction",
+  "signal",
+  "sigaltstack",
+  "backtrace",
+  "crash",
+  "tombstone",
+  "breakpad",
+  "crashpad",
+  "minidump",
+  "sigsegv",
+  "sigabrt",
+  "sigbus",
+  "exception",
+  "unwind"
+];
+
+function getFunctionBytes(parser, func) {
+  const offset = func.offset;
+  const size = Math.min(
+    Number(func.size || 0),
+    1024 * 1024
+  );
+
+  if (
+    !Number.isFinite(offset) ||
+    offset < 0 ||
+    offset >= parser.bytes.length ||
+    size <= 0
+  ) {
+    return new Uint8Array();
+  }
+
+  return parser.bytes.slice(
+    offset,
+    Math.min(
+      parser.bytes.length,
+      offset + size
+    )
+  );
+}
+
+function disassemblePreview(parser, func) {
+  const bytes = getFunctionBytes(parser, func);
+  const lines = [];
+
+  if (!bytes.length) {
+    return lines;
+  }
+
+  if (parser.arch === "AArch64") {
+    for (
+      let i = 0;
+      i + 4 <= bytes.length && lines.length < 120;
+      i += 4
+    ) {
+      const word = readU32(
+        bytes,
+        i,
+        parser.little
+      );
+
+      const pc = func.rva + i;
+
+      lines.push({
+        pc,
+        raw: word,
+        text: decodeArm64(word, pc)
+      });
+
+      if (
+        word === 0xD65F03C0 ||
+        word === 0xD65F0BFF ||
+        word === 0xD65F0FFF
+      ) {
+        break;
+      }
+    }
+  } else {
+    for (
+      let i = 0;
+      i < bytes.length && lines.length < 120;
+      i++
+    ) {
+      lines.push({
+        pc: func.rva + i,
+        raw: bytes[i],
+        text: "db " + hex(bytes[i], 2)
+      });
+    }
+  }
+
+  return lines;
+}
+
+function signExtend(value, bits) {
+  const shift = 32 - bits;
+
+  return (value << shift) >> shift;
+}
+
+function decodeArm64(word, pc) {
+  if (word === 0xD65F03C0) return "ret";
+  if (word === 0xD503201F) return "nop";
+  if (word === 0xD503241F) return "bti c";
+  if (word === 0xD503233F) return "paciasp";
+  if (word === 0xD50323BF) return "autiasp";
+
+  if ((word & 0xFC000000) === 0x94000000) {
+    const imm = signExtend(
+      word & 0x03FFFFFF,
+      26
+    ) << 2;
+
+    return "bl " + hex(pc + imm);
+  }
+
+  if ((word & 0xFC000000) === 0x14000000) {
+    const imm = signExtend(
+      word & 0x03FFFFFF,
+      26
+    ) << 2;
+
+    return "b " + hex(pc + imm);
+  }
+
+  if ((word & 0x7F000000) === 0x11000000) {
+    return "add/sub immediate";
+  }
+
+  if ((word & 0x7F000000) === 0x51000000) {
+    return "sub immediate";
+  }
+
+  if ((word & 0x3B000000) === 0x18000000) {
+    return "ldr literal";
+  }
+
+  if ((word & 0xFFFFFC1F) === 0xD63F0000) {
+    return "blr register";
+  }
+
+  if ((word & 0xFFFFFC1F) === 0xD61F0000) {
+    return "br register";
+  }
+
+  if ((word & 0xFFE0FFE0) === 0xAA0003E0) {
+    return "mov register";
+  }
+
+  if ((word & 0x7F800000) === 0x52800000) {
+    return "mov immediate";
+  }
+
+  if ((word & 0x7F800000) === 0x12800000) {
+    return "mov negative immediate";
+  }
+
+  if ((word & 0xFFE0001F) === 0xD4000001) {
+    return "svc";
+  }
+
+  if ((word & 0x7F000000) === 0x54000000) {
+    return "conditional branch";
+  }
+
+  return ".word " + hex(word);
+}
+
+function stringsForFunction(parser, func) {
+  const output = [];
+  const start = func.offset;
+  const end = Math.min(
+    parser.bytes.length,
+    start + Math.min(func.size, 1024 * 1024)
+  );
+
+  const nearby = parser.strings.filter(item =>
+    item.offset >= start &&
+    item.offset < end
+  );
+
+  for (const item of nearby.slice(0, 50)) {
+    output.push(item.text);
+  }
+
+  return uniqueStrings(output);
+}
+
+function uniqueStrings(values) {
+  return [...new Set(values)];
+}
+
+function importsForFunction(parser, func) {
+  const bytes = getFunctionBytes(parser, func);
+  const text = [...bytes]
+    .map(byte => String.fromCharCode(byte))
+    .join("");
+
+  const output = [];
+
+  for (const symbol of parser.imports) {
+    if (
+      symbol.name &&
+      (
+        parser.bytesTextLower.includes(
+          symbol.name.toLowerCase()
+        ) ||
+        text.includes(symbol.name.slice(0, 8))
+      )
+    ) {
+      output.push(symbol.name);
+    }
+  }
+
+  return uniqueStrings(output).slice(0, 80);
+}
+
+function makeFunctionAnalysis(parser, func) {
+  const instructions = disassemblePreview(
+    parser,
+    func
+  );
+
+  const strings = stringsForFunction(
+    parser,
+    func
+  );
+
+  const imports = importsForFunction(
+    parser,
+    func
+  );
+
+  const text = [
+    func.name,
+    ...strings,
+    ...imports,
+    ...instructions.map(line => line.text)
+  ].join(" ");
+
+  const protectionMatches = protectionWords.filter(word =>
+    text.toLowerCase().includes(word.toLowerCase())
+  );
+
+  const crashMatches = crashWords.filter(word =>
+    text.toLowerCase().includes(word.toLowerCase())
+  );
+
+  const hasCalls = instructions.some(line =>
+    line.text.startsWith("bl ") ||
+    line.text === "blr register"
+  );
+
+  const hasBranches = instructions.some(line =>
+    line.text.includes("branch") ||
+    line.text.startsWith("b ")
+  );
+
+  const hasSyscall = instructions.some(line =>
+    line.text === "svc"
+  );
+
+  const hasMemory = instructions.some(line =>
+    line.text.includes("ldr") ||
+    line.text.includes("str") ||
+    line.text.includes("load")
+  );
+
+  const protectionScore = Math.min(
+    100,
+    protectionMatches.length * 13 +
+    imports.filter(name =>
+      containsAny(name, protectionWords)
+    ).length * 18 +
+    (hasSyscall ? 15 : 0) +
+    (hasBranches ? 8 : 0) +
+    (hasMemory ? 4 : 0)
+  );
+
+  const crashScore = Math.min(
+    100,
+    crashMatches.length * 18 +
+    imports.filter(name =>
+      containsAny(name, crashWords)
+    ).length * 20 +
+    (hasBranches ? 8 : 0)
+  );
+
+  const tier = protectionScore >= 80
+    ? "critical"
+    : protectionScore >= 60
+      ? "high"
+      : protectionScore >= 35
+        ? "medium"
+        : "low";
+
+  const crashTier = crashScore >= 80
+    ? "critical"
+    : crashScore >= 60
+      ? "high"
+      : crashScore >= 35
+        ? "medium"
+        : "low";
+
+  const evidence = [];
+
+  for (const match of protectionMatches) {
+    evidence.push({
+      type: "protection-marker",
+      category: match,
+      weight: 13,
+      value: match
+    });
+  }
+
+  for (const match of crashMatches) {
+    evidence.push({
+      type: "crash-marker",
+      category: match,
+      weight: 18,
+      value: match
+    });
+  }
+
+  for (const name of imports) {
+    if (containsAny(name, protectionWords)) {
+      evidence.push({
+        type: "import",
+        category: "protection",
+        weight: 18,
+        value: name
+      });
+    }
+
+    if (containsAny(name, crashWords)) {
+      evidence.push({
+        type: "import",
+        category: "crash",
+        weight: 20,
+        value: name
+      });
+    }
+  }
+
+  const categories = {};
+
+  for (const item of evidence) {
+    categories[item.category] =
+      (categories[item.category] || 0) +
+      item.weight;
+  }
+
+  return {
+    ...func,
+    rva_fmt: hex(func.rva),
+    offset_fmt: hex(func.offset),
+    end_fmt: hex(func.end),
+    instructions,
+    n_insns: instructions.length,
+    imports_called: imports,
+    strings_ref: strings,
+    decoded_strings: [],
+    evidence,
+    category_scores: categories,
+    protection_score: protectionScore,
+    crash_score: crashScore,
+    score: protectionScore,
+    confidence: Math.max(
+      protectionScore,
+      crashScore
+    ),
+    tier,
+    tier_ar: tier === "critical"
+      ? "حرج"
+      : tier === "high"
+        ? "عالٍ"
+        : tier === "medium"
+          ? "متوسط"
+          : "منخفض",
+    crash_tier: crashTier,
+    primary_category:
+      protectionMatches[0] ||
+      crashMatches[0] ||
+      "other",
+    detectors: {
+      syscall: hasSyscall,
+      branch_logic: hasBranches,
+      memory_access: hasMemory,
+      protection_marker: protectionMatches.length > 0,
+      crash_marker: crashMatches.length > 0
+    },
+    callers: [],
+    callees: [],
+    local_calls: [],
+    conditions: instructions
+      .filter(line =>
+        line.text.includes("branch")
+      )
+      .map(line => ({
+        pc: line.pc,
+        text: line.text
+      })),
+    constants: [],
+    syscalls: instructions
+      .filter(line =>
+        line.text === "svc"
+      )
+      .map(line => ({
+        pc: line.pc,
+        text: line.text
+      })),
+    raw_bytes: [...getFunctionBytes(
+      parser,
+      func
+    ).slice(0, 128)]
+      .map(byte => byte.toString(16).padStart(2, "0"))
+      .join(" ")
+  };
+}
+
+function buildCallGraph(parser) {
+  const byRva = new Map(
+    parser.functions.map(func =>
+      [Number(func.rva), func]
+    )
+  );
+
+  for (const func of parser.functions) {
+    const analysis = func.analysis;
+    const callees = [];
+    const callers = [];
+
+    for (const instruction of analysis.instructions) {
+      const match = instruction.text.match(
+        /^(?:bl|b)s+(0x[0-9A-F]+)$/i
+      );
+
+      if (!match) {
+        continue;
+      }
+
+      const target = parseInt(
+        match[1].slice(2),
+        16
+      );
+
+      if (byRva.has(target)) {
+        callees.push(
+          byRva.get(target).name ||
+          hex(target)
+        );
+      }
+    }
+
+    analysis.callees = uniqueStrings(callees);
+  }
+
+  const reverse = new Map();
+
+  for (const func of parser.functions) {
+    for (const callee of func.analysis.callees) {
+      const target = parser.functions.find(item =>
+        item.name === callee
+      );
+
+      if (!target) {
+        continue;
+      }
+
+      if (!reverse.has(target.rva)) {
+        reverse.set(target.rva, []);
+      }
+
+      reverse.get(target.rva).push(
+        func.name
+      );
+    }
+  }
+
+  for (const func of parser.functions) {
+    func.analysis.callers =
+      uniqueStrings(
+        reverse.get(func.rva) || []
+      );
+
+    func.analysis.local_calls =
+      func.analysis.callees;
+  }
+}
+
+function analyzeFunctions(parser) {
+  parser.bytesTextLower = [...parser.bytes]
+    .map(byte => String.fromCharCode(byte))
+    .join("")
+    .toLowerCase();
+
+  for (const func of parser.functions) {
+    func.analysis = makeFunctionAnalysis(
+      parser,
+      func
+    );
+  }
+
+  buildCallGraph(parser);
+
+  parser.protection = parser.functions
+    .map(func => func.analysis)
+    .filter(item =>
+      item.protection_score >= 20
+    )
+    .sort((a, b) =>
+      b.protection_score - a.protection_score
+    );
+
+  parser.crash = parser.functions
+    .map(func => func.analysis)
+    .filter(item =>
+      item.crash_score >= 20
+    )
+    .sort((a, b) =>
+      b.crash_score - a.crash_score
+    );
+
+  const strongProtection = new Set(
+    parser.protection
+      .filter(item =>
+        item.protection_score >= 60
+      )
+      .map(item => item.name)
+  );
+
+  parser.related = parser.functions
+    .map(func => func.analysis)
+    .filter(item =>
+      item.callees.some(name =>
+        strongProtection.has(name)
+      ) ||
+      item.callers.some(name =>
+        strongProtection.has(name)
+      )
+    )
+    .map(item => ({
+      ...item,
+      primary_category: "wrapper",
+      related_to: "protection function"
+    }));
+}
+
+function buildReport(parser) {
+  return {
+    file: parser.fileName,
+    arch: parser.arch,
+    size: parser.bytes.length,
+    entry: parser.entry,
+    sections: parser.sections,
+    segments: parser.segments,
+    symbols: parser.symbols,
+    imports: parser.imports,
+    exports: parser.exports,
+    strings: parser.strings,
+    all_functions: parser.functions.map(
+      func => func.analysis
+    ),
+    protection: parser.protection,
+    fix_crash: parser.crash,
+    related: parser.related,
+    stats: {
+      total_functions: parser.functions.length,
+      total_strings: parser.strings.length,
+      total_imports: parser.imports.length,
+      total_exports: parser.exports.length,
+      protection: parser.protection.length,
+      crash: parser.crash.length,
+      related: parser.related.length
+    }
+  };
+}
+
+function currentItems() {
+  if (!state.elf) {
+    return [];
+  }
+
+  if (state.scan === "strings") {
+    return state.elf.strings;
+  }
+
+  if (state.scan === "imports") {
+    return state.elf.imports;
+  }
+
+  if (state.scan === "sections") {
+    return state.elf.sections;
+  }
+
+  if (state.mode === "crash") {
+    return state.elf.crash;
+  }
+
+  if (state.mode === "related") {
+    return state.elf.related;
+  }
+
+  if (state.mode === "all") {
+    return state.elf.functions.map(
+      func => func.analysis
+    );
+  }
+
+  return state.elf.protection;
+}
+
+function itemSearchText(item) {
+  if (typeof item === "string") {
+    return item.toLowerCase();
+  }
+
+  return [
+    item.name,
+    item.rva,
+    item.rva_fmt,
+    item.offset,
+    item.offset_fmt,
+    item.section,
+    item.type,
+    item.typeName,
+    item.bind,
+    item.primary_category,
+    item.related_to,
+    ...(item.imports_called || []),
+    ...(item.strings_ref || []),
+    ...(item.decoded_strings || [])
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function renderCards() {
+  const elf = state.elf;
+
+  if (!elf) {
+    return;
+  }
+
+  $("cardFile").textContent =
+    elf.fileName.split("/").pop();
+
+  $("cardArch").textContent =
+    elf.arch;
+
+  $("cardSize").textContent =
+    (elf.bytes.length / 1024 / 1024).toFixed(2) +
+    " MB";
+
+  $("cardTotal").textContent =
+    elf.functions.length;
+
+  $("cardProtection").textContent =
+    elf.protection.length;
+
+  $("cardCrash").textContent =
+    elf.crash.length;
+
+  $("cardStrings").textContent =
+    elf.strings.length;
+
+  $("cardImports").textContent =
+    elf.imports.length;
 }
 
 function tierClass(tier) {
@@ -612,198 +2141,222 @@ function tierClass(tier) {
   return "purple";
 }
 
-function normalizeReport(data, fileName) {
-  if (!data || typeof data !== "object") {
-    throw new Error("نتيجة التحليل ليست JSON صحيحة.");
-  }
-
-  return {
-    ...data,
-
-    file: data.file || fileName,
-
-    protection: Array.isArray(data.protection)
-      ? data.protection
-      : [],
-
-    fix_crash: Array.isArray(data.fix_crash)
-      ? data.fix_crash
-      : [],
-
-    related: Array.isArray(data.related)
-      ? data.related
-      : [],
-
-    all_functions: Array.isArray(data.all_functions)
-      ? data.all_functions
-      : (
-        Array.isArray(data.functions)
-          ? data.functions
-          : []
-      )
-  };
-}
-
-function reportItems() {
-  if (!report) return [];
-
-  if (currentMode === "crash") {
-    return report.fix_crash;
-  }
-
-  if (currentMode === "related") {
-    return report.related;
-  }
-
-  if (currentMode === "all") {
-    return report.all_functions;
-  }
-
-  return report.protection;
-}
-
-function score(item) {
-  return Number(
-    item.confidence ??
-    item.protection_confidence ??
-    item.crash_confidence ??
-    item.score ??
-    item.crash_score ??
-    0
-  );
-}
-
-function searchable(item) {
-  return [
-    item.name,
-    item.rva,
-    item.rva_fmt,
-    item.tier,
-    item.tier_ar,
-    item.primary_category,
-    item.related_to,
-    item.confidence_reasons,
-    ...(item.imports_called || []),
-    ...(item.strings_ref || []),
-    ...(item.decoded_strings || [])
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-}
-
-function updateCards() {
-  if (!report) return;
-
-  $("fileName").textContent =
-    String(report.file || "-").split("/").pop();
-
-  $("arch").textContent =
-    report.arch || report.architecture || "-";
-
-  $("total").textContent =
-    report.total ??
-    report.all_functions.length;
-
-  $("protection").textContent =
-    report.protection.length;
-
-  $("crash").textContent =
-    report.fix_crash.length;
-
-  $("related").textContent =
-    report.related.length;
-}
-
 function renderList() {
-  const search = $("search").value.trim().toLowerCase();
+  const list = $("list");
+  const search = $("search")
+    .value
+    .trim()
+    .toLowerCase();
 
-  let items = reportItems();
+  let items = currentItems();
 
   if (search) {
     items = items.filter(item =>
-      searchable(item).includes(search)
+      itemSearchText(item).includes(search)
     );
   }
 
-  visibleItems = items;
+  state.visible = items;
 
   const titles = {
-    protection: "الحماية",
-    crash: "إصلاح الكراش",
+    protection: "الحمايات",
+    crash: "أسباب الكراش",
     related: "Related",
     all: "كل الدوال"
   };
 
-  $("listTitle").textContent = titles[currentMode];
-  $("listCount").textContent = items.length;
+  if (state.scan === "strings") {
+    $("listTitle").textContent = "Strings";
+  } else if (state.scan === "imports") {
+    $("listTitle").textContent = "Imports";
+  } else if (state.scan === "sections") {
+    $("listTitle").textContent = "Sections";
+  } else {
+    $("listTitle").textContent =
+      titles[state.mode];
+  }
+
+  $("listCount").textContent =
+    items.length;
 
   if (!items.length) {
-    $("list").innerHTML = `
+    list.innerHTML = `
       <div class="empty">
         لا توجد نتائج.
       </div>
     `;
+
     return;
   }
 
-  $("list").innerHTML = items.map((item, index) => {
-    const isSelected =
-      selected &&
-      Number(selected.rva) === Number(item.rva)
+  if (state.scan === "strings") {
+    list.innerHTML = items.map((item, index) => `
+      <div class="list-item" data-index="${index}">
+        <div class="item-name">
+          ${escapeHtml(item.text)}
+        </div>
+
+        <div class="item-sub">
+          Offset: ${escapeHtml(hex(item.offset))}
+        </div>
+      </div>
+    `).join("");
+
+    bindListClicks();
+    return;
+  }
+
+  if (state.scan === "imports") {
+    list.innerHTML = items.map((item, index) => `
+      <div class="list-item" data-index="${index}">
+        <div class="item-name">
+          ${escapeHtml(item.name)}
+        </div>
+
+        <div class="item-sub">
+          ${escapeHtml(item.bind)}
+          |
+          ${escapeHtml(item.type)}
+          |
+          ${escapeHtml(item.table)}
+        </div>
+      </div>
+    `).join("");
+
+    bindListClicks();
+    return;
+  }
+
+  if (state.scan === "sections") {
+    list.innerHTML = items.map((item, index) => `
+      <div class="list-item" data-index="${index}">
+        <div class="item-name">
+          ${escapeHtml(item.name || "[unnamed]")}
+        </div>
+
+        <div class="item-sub">
+          addr=${escapeHtml(hex(item.addr))}
+          |
+          offset=${escapeHtml(hex(item.offset))}
+        </div>
+
+        <span class="badge blue">
+          ${escapeHtml(item.typeName)}
+        </span>
+
+        <span class="badge green">
+          ${escapeHtml(item.flagsText)}
+        </span>
+
+        <span class="badge yellow">
+          size=${escapeHtml(item.size)}
+        </span>
+      </div>
+    `).join("");
+
+    bindListClicks();
+    return;
+  }
+
+  list.innerHTML = items.map((item, index) => {
+    const selected =
+      state.selected &&
+      Number(state.selected.rva) === Number(item.rva)
         ? "selected"
         : "";
 
-    const tier = item.tier_ar || item.tier || "غير مصنف";
-    const category = item.primary_category || "other";
-
     return `
-      <div class="item ${isSelected}" data-index="${index}">
+      <div class="list-item ${selected}" data-index="${index}">
         <div class="item-name">
-          ${escapeHtml(item.name || ("sub_" + hex(item.rva)))}
+          ${escapeHtml(
+            item.name ||
+            ("sub_" + Number(item.rva).toString(16))
+          )}
         </div>
 
         <div class="item-sub">
           RVA:
           ${escapeHtml(item.rva_fmt || hex(item.rva))}
           |
-          size=${escapeHtml(item.size ?? "-")}
+          Offset:
+          ${escapeHtml(item.offset_fmt || hex(item.offset))}
         </div>
 
         <span class="badge ${tierClass(item.tier)}">
-          ${escapeHtml(tier)}
+          ${escapeHtml(item.tier_ar || item.tier || "-")}
         </span>
 
         <span class="badge green">
-          confidence=${escapeHtml(score(item))}%
+          protection=${escapeHtml(item.protection_score ?? 0)}
         </span>
 
-        <span class="badge blue">
-          ${escapeHtml(category)}
+        <span class="badge red">
+          crash=${escapeHtml(item.crash_score ?? 0)}
         </span>
 
         <div class="item-sub">
-          score=${escapeHtml(item.score ?? "-")}
+          ${escapeHtml(item.primary_category || "other")}
           |
-          crash=${escapeHtml(item.crash_score ?? "-")}
+          insns=${escapeHtml(item.n_insns ?? 0)}
+          |
+          callers=${escapeHtml(item.callers?.length ?? 0)}
+          |
+          callees=${escapeHtml(item.callees?.length ?? 0)}
         </div>
       </div>
     `;
   }).join("");
 
-  document.querySelectorAll(".item").forEach(element => {
-    element.addEventListener("click", () => {
-      selected = visibleItems[
-        Number(element.dataset.index)
-      ];
+  bindListClicks();
+}
 
-      renderAll();
+function bindListClicks() {
+  document
+    .querySelectorAll(".list-item")
+    .forEach(element => {
+      element.addEventListener("click", () => {
+        const item =
+          state.visible[
+            Number(element.dataset.index)
+          ];
+
+        if (state.scan === "functions") {
+          state.selected = item;
+        } else {
+          renderSimpleItem(item);
+          return;
+        }
+
+        renderAll();
+      });
     });
-  });
+}
+
+function renderSimpleItem(item) {
+  if (!item) {
+    return;
+  }
+
+  $("graph").innerHTML = `
+    <div class="empty">
+      العنصر المحدد ليس دالة قابلة لعرض Callers/Callees.
+    </div>
+  `;
+
+  $("details").innerHTML = `
+    <div class="details">
+      <div class="details-section">
+        <div class="details-title">تفاصيل العنصر</div>
+        <pre>${escapeHtml(
+          JSON.stringify(item, null, 2)
+        )}</pre>
+      </div>
+    </div>
+  `;
 }
 
 function renderGraph() {
-  const item = selected;
+  const item = state.selected;
 
   if (!item) {
     $("graph").innerHTML = `
@@ -811,40 +2364,30 @@ function renderGraph() {
         اختر دالة من القائمة.
       </div>
     `;
+
     return;
   }
 
-  const callers = Array.isArray(item.callers)
-    ? item.callers
-    : [];
+  const callers = item.callers || [];
+  const callees = item.callees || [];
 
-  const callees = Array.isArray(item.callees)
-    ? item.callees
-    : (
-      Array.isArray(item.local_calls)
-        ? item.local_calls
-        : []
-    );
+  const callerHtml = callers
+    .slice(0, 30)
+    .map(name => `
+      <div class="graph-node caller">
+        ${escapeHtml(name)}
+      </div>
+    `)
+    .join("");
 
-  const callerNodes = callers.slice(0, 20).map(value => `
-    <div class="node caller">
-      ${escapeHtml(
-        typeof value === "number"
-          ? hex(value)
-          : value
-      )}
-    </div>
-  `).join("");
-
-  const calleeNodes = callees.slice(0, 20).map(value => `
-    <div class="node">
-      ${escapeHtml(
-        typeof value === "number"
-          ? hex(value)
-          : value
-      )}
-    </div>
-  `).join("");
+  const calleeHtml = callees
+    .slice(0, 30)
+    .map(name => `
+      <div class="graph-node">
+        ${escapeHtml(name)}
+      </div>
+    `)
+    .join("");
 
   $("graph").innerHTML = `
     <div class="graph-title">
@@ -852,12 +2395,12 @@ function renderGraph() {
     </div>
 
     <div class="graph-row">
-      ${callerNodes || '<div class="empty">لا يوجد Callers</div>'}
+      ${callerHtml || '<div class="empty">لا يوجد Callers</div>'}
     </div>
 
     <div class="graph-row">
       ${callers.length ? '<div class="arrow">↓</div>' : ""}
-      <div class="node main">
+      <div class="graph-node main">
         ${escapeHtml(item.name || hex(item.rva))}
         <br>
         ${escapeHtml(item.rva_fmt || hex(item.rva))}
@@ -866,14 +2409,18 @@ function renderGraph() {
 
     <div class="graph-row">
       ${callees.length ? '<div class="arrow">↓</div>' : ""}
-      ${calleeNodes || '<div class="empty">لا يوجد Callees</div>'}
+      ${calleeHtml || '<div class="empty">لا يوجد Callees</div>'}
     </div>
   `;
 }
 
-function badges(values, className = "blue") {
+function renderBadges(values, className = "blue") {
   if (!Array.isArray(values) || !values.length) {
-    return '<span class="badge purple">لا يوجد</span>';
+    return `
+      <span class="badge purple">
+        لا يوجد
+      </span>
+    `;
   }
 
   return values.map(value => `
@@ -884,92 +2431,94 @@ function badges(values, className = "blue") {
 }
 
 function renderDetails() {
-  if (!selected) {
+  const item = state.selected;
+
+  if (!item) {
     $("details").innerHTML = `
       <div class="empty">
         لا توجد دالة محددة.
       </div>
     `;
+
     return;
   }
 
-  const item = selected;
-
+  const evidence = item.evidence || [];
   const imports = item.imports_called || [];
   const strings = item.strings_ref || [];
-  const decoded = item.decoded_strings || [];
-  const conditions = item.conditions || [];
-  const constants = item.constants || [];
-  const syscalls = item.syscalls || [];
-  const evidence = item.evidence || [];
-  const detectors = item.detectors || {};
-
-  const activeDetectors = Object.entries(detectors)
+  const instructions = item.instructions || [];
+  const detectors = Object.entries(
+    item.detectors || {}
+  )
     .filter(([, value]) => value)
     .map(([name]) => name);
 
   const confidence = Math.max(
     0,
-    Math.min(100, score(item))
+    Math.min(
+      100,
+      Number(item.confidence || 0)
+    )
   );
 
   $("details").innerHTML = `
     <div class="details">
 
-      <div class="section">
-        <div class="section-title">المعلومات الأساسية</div>
+      <div class="details-section">
+        <div class="details-title">
+          المعلومات الأساسية
+        </div>
 
         <div class="kv">
           <b>الاسم</b>
           <code>${escapeHtml(item.name || "-")}</code>
 
           <b>RVA</b>
-          <code>${escapeHtml(item.rva_fmt || hex(item.rva))}</code>
+          <code>${escapeHtml(item.rva_fmt || "-")}</code>
+
+          <b>Offset</b>
+          <code>${escapeHtml(item.offset_fmt || "-")}</code>
 
           <b>النهاية</b>
-          <code>${escapeHtml(hex(item.end || 0))}</code>
+          <code>${escapeHtml(item.end_fmt || "-")}</code>
 
-          <b>الحجم</b>
-          <span>${escapeHtml(item.size ?? "-")} bytes</span>
+          <b>القسم</b>
+          <span>${escapeHtml(item.section || "-")}</span>
 
           <b>المصدر</b>
           <span>${escapeHtml(item.source || "-")}</span>
 
-          <b>التصنيف</b>
-          <span>${escapeHtml(item.primary_category || "-")}</span>
-
-          <b>الحقيقية</b>
-          <span>${escapeHtml(item.is_real ?? "-")}</span>
+          <b>الحجم</b>
+          <span>${escapeHtml(item.size || 0)} bytes</span>
         </div>
       </div>
 
-      <div class="section">
-        <div class="section-title">الدرجات</div>
+      <div class="details-section">
+        <div class="details-title">
+          الدرجات
+        </div>
 
         <div class="kv">
+          <b>Protection</b>
+          <span>${escapeHtml(item.protection_score || 0)}</span>
+
+          <b>Crash</b>
+          <span>${escapeHtml(item.crash_score || 0)}</span>
+
           <b>Confidence</b>
           <span>${confidence}%</span>
 
-          <b>Protection</b>
-          <span>${escapeHtml(item.score ?? "-")}</span>
+          <b>التصنيف</b>
+          <span>${escapeHtml(item.primary_category || "-")}</span>
 
-          <b>Crash</b>
-          <span>${escapeHtml(item.crash_score ?? "-")}</span>
-
-          <b>Signal raw</b>
-          <span>${escapeHtml(item.signal_raw ?? "-")}</span>
-
-          <b>Context raw</b>
-          <span>${escapeHtml(item.context_raw ?? "-")}</span>
-
-          <b>Instructions</b>
-          <span>${escapeHtml(item.n_insns ?? "-")}</span>
+          <b>التعليمات</b>
+          <span>${escapeHtml(item.n_insns || 0)}</span>
 
           <b>Callers</b>
-          <span>${escapeHtml(item.n_callers ?? "-")}</span>
+          <span>${escapeHtml(item.callers?.length || 0)}</span>
 
           <b>Callees</b>
-          <span>${escapeHtml(item.n_callees ?? "-")}</span>
+          <span>${escapeHtml(item.callees?.length || 0)}</span>
         </div>
 
         <div class="progress">
@@ -977,51 +2526,32 @@ function renderDetails() {
         </div>
       </div>
 
-      <div class="section">
-        <div class="section-title">سبب التحليل</div>
-
-        <pre>${escapeHtml(
-          item.confidence_reasons ||
-          item.protection_confidence_reasons ||
-          item.crash_confidence_reasons ||
-          "لا يوجد"
-        )}</pre>
-      </div>
-
-      <div class="section">
-        <div class="section-title">
-          Detectors (${activeDetectors.length})
+      <div class="details-section">
+        <div class="details-title">
+          Detectors
         </div>
 
-        ${badges(activeDetectors, "orange")}
+        ${renderBadges(detectors, "orange")}
       </div>
 
-      <div class="section">
-        <div class="section-title">
+      <div class="details-section">
+        <div class="details-title">
           Imports / APIs (${imports.length})
         </div>
 
-        ${badges(imports, "blue")}
+        ${renderBadges(imports, "blue")}
       </div>
 
-      <div class="section">
-        <div class="section-title">
+      <div class="details-section">
+        <div class="details-title">
           Strings (${strings.length})
         </div>
 
-        ${badges(strings, "yellow")}
+        ${renderBadges(strings, "yellow")}
       </div>
 
-      <div class="section">
-        <div class="section-title">
-          Decoded Strings (${decoded.length})
-        </div>
-
-        ${badges(decoded, "purple")}
-      </div>
-
-      <div class="section">
-        <div class="section-title">
+      <div class="details-section">
+        <div class="details-title">
           Evidence (${evidence.length})
         </div>
 
@@ -1030,51 +2560,56 @@ function renderDetails() {
             evidence.length
               ? evidence.map(entry => `
                 <div class="detail-line">
-                  [+${escapeHtml(entry.weight ?? 0)}]
-                  ${escapeHtml(entry.category || "")}
-                  |
+                  [+${escapeHtml(entry.weight || 0)}]
                   ${escapeHtml(entry.type || "")}
+                  |
+                  ${escapeHtml(entry.category || "")}
                   |
                   ${escapeHtml(entry.value || "")}
                 </div>
               `).join("")
-              : '<div class="empty">لا يوجد</div>'
+              : '<div class="empty">لا توجد أدلة.</div>'
           }
         </div>
       </div>
 
-      <div class="section">
-        <div class="section-title">
-          Conditions (${conditions.length})
+      <div class="details-section">
+        <div class="details-title">
+          التعليمات
         </div>
 
         <pre>${escapeHtml(
-          JSON.stringify(conditions, null, 2)
+          instructions
+            .map(line =>
+              hex(line.pc) +
+              "  " +
+              line.text
+            )
+            .join("
+")
         )}</pre>
       </div>
 
-      <div class="section">
-        <div class="section-title">
-          Constants (${constants.length})
+      <div class="details-section">
+        <div class="details-title">
+          الشروط والفروع
         </div>
 
         <pre>${escapeHtml(
-          JSON.stringify(constants, null, 2)
+          JSON.stringify(item.conditions || [], null, 2)
         )}</pre>
       </div>
 
-      <div class="section">
-        <div class="section-title">
-          Syscalls (${syscalls.length})
+      <div class="details-section">
+        <div class="details-title">
+          Raw Bytes
         </div>
 
-        <pre>${escapeHtml(
-          JSON.stringify(syscalls, null, 2)
-        )}</pre>
+        <pre>${escapeHtml(item.raw_bytes || "")}</pre>
       </div>
 
-      <div class="section">
-        <div class="section-title">
+      <div class="details-section">
+        <div class="details-title">
           JSON الدالة
         </div>
 
@@ -1088,144 +2623,58 @@ function renderDetails() {
 }
 
 function renderAll() {
-  updateCards();
+  renderCards();
   renderList();
   renderGraph();
   renderDetails();
 }
 
-async function initializePython() {
-  try {
-    setStatus("جاري تحميل Python داخل المتصفح...");
-
-    pyodide = await loadPyodide();
-
-    $("notice").textContent =
-      "تم تحميل Python. اختر ملف SO أو ELF للتحليل.";
-
-    setStatus("المحلل جاهز.");
-  } catch (error) {
-    console.error(error);
-
-    $("notice").textContent =
-      "فشل تحميل Python من CDN.";
-
-    setStatus(
-      "فشل تشغيل Pyodide: " + error.message,
-      true
-    );
-  }
-}
-
-async function analyzeFile(file) {
-  if (!pyodide) {
-    throw new Error(
-      "Python لم يكتمل تحميله بعد. انتظر قليلًا."
-    );
-  }
-
-  const bytes = new Uint8Array(
-    await file.arrayBuffer()
-  );
-
-  if (
-    bytes.length < 4 ||
-    bytes[0] !== 0x7f ||
-    bytes[1] !== 0x45 ||
-    bytes[2] !== 0x4c ||
-    bytes[3] !== 0x46
-  ) {
-    throw new Error(
-      "الملف المختار ليس ELF أو SO صالحًا."
-    );
-  }
-
-  pyodide.globals.set(
-    "web_binary_data",
-    bytes
-  );
-
-  pyodide.globals.set(
-    "web_file_name",
-    file.name
-  );
-
-  const resultText = await pyodide.runPythonAsync(`
-import json
-
-try:
-    import h
-except Exception as import_error:
-    json.dumps({
-        "ok": False,
-        "error": "تعذر استيراد h.py: " + str(import_error)
-    }, ensure_ascii=False)
-else:
-    try:
-        if not hasattr(h, "analyze_bytes_for_web"):
-            raise Exception(
-                "الدالة analyze_bytes_for_web غير موجودة داخل h.py"
-            )
-
-        result = h.analyze_bytes_for_web(
-            bytes(web_binary_data),
-            str(web_file_name)
-        )
-
-        result if isinstance(result, str) else json.dumps(
-            result,
-            ensure_ascii=False,
-            default=str
-        )
-    except Exception as analysis_error:
-        json.dumps({
-            "ok": False,
-            "error": str(analysis_error)
-        }, ensure_ascii=False)
-`);
-
-  pyodide.globals.delete("web_binary_data");
-  pyodide.globals.delete("web_file_name");
-
-  const data = JSON.parse(resultText);
-
-  if (data.ok === false) {
-    throw new Error(data.error || "فشل التحليل.");
-  }
-
-  return data;
-}
-
-$("elfFile").addEventListener("change", async event => {
-  const file = event.target.files?.[0];
-
-  if (!file) {
-    return;
-  }
-
+async function handleFile(file) {
   try {
     setStatus(
-      `جاري تحليل ${file.name}... لا تغلق الصفحة.`
+      "جاري قراءة وتحليل " + file.name + " ..."
     );
 
-    const data = await analyzeFile(file);
+    const buffer = await file.arrayBuffer();
 
-    report = normalizeReport(data, file.name);
-    selected = null;
-    currentMode = "protection";
+    state.bytes = new Uint8Array(buffer);
+    state.file = file;
 
-    document.querySelectorAll(".mode").forEach(button => {
-      button.classList.toggle(
-        "active",
-        button.dataset.mode === currentMode
-      );
-    });
+    state.elf = createElfParser(
+      state.bytes,
+      file.name
+    );
+
+    state.mode = "protection";
+    state.scan = "functions";
+    state.selected = null;
+
+    document
+      .querySelectorAll(".mode-button")
+      .forEach(button => {
+        button.classList.toggle(
+          "active",
+          button.dataset.mode === state.mode
+        );
+      });
+
+    document
+      .querySelectorAll(".scan-tab")
+      .forEach(button => {
+        button.classList.toggle(
+          "active",
+          button.dataset.scan === state.scan
+        );
+      });
 
     setStatus(
-      `اكتمل التحليل: ${file.name} | ` +
-      `Protection=${report.protection.length} | ` +
-      `Crash=${report.fix_crash.length} | ` +
-      `Related=${report.related.length}`
+      "اكتمل التحليل: " +
+      file.name +
+      " | " +
+      state.elf.arch +
+      " | " +
+      state.elf.functions.length +
+      " functions"
     );
 
     renderAll();
@@ -1233,45 +2682,94 @@ $("elfFile").addEventListener("change", async event => {
     console.error(error);
 
     setStatus(
-      "فشل تحليل الملف: " + error.message,
+      "فشل التحليل: " + error.message,
       true
     );
 
     alert(
-      "فشل التحليل:
+      "فشل تحليل الملف:
 
 " +
       error.message
     );
   }
+}
 
-  event.target.value = "";
-});
+$("fileInput").addEventListener(
+  "change",
+  event => {
+    const file = event.target.files?.[0];
 
-$("search").addEventListener("input", renderList);
+    if (file) {
+      handleFile(file);
+    }
 
-document.querySelectorAll(".mode").forEach(button => {
-  button.addEventListener("click", () => {
-    currentMode = button.dataset.mode;
-    selected = null;
+    event.target.value = "";
+  }
+);
 
-    document.querySelectorAll(".mode").forEach(other => {
-      other.classList.toggle(
-        "active",
-        other === button
-      );
+$("search").addEventListener(
+  "input",
+  renderList
+);
+
+document
+  .querySelectorAll(".mode-button")
+  .forEach(button => {
+    button.addEventListener("click", () => {
+      state.mode = button.dataset.mode;
+      state.scan = "functions";
+      state.selected = null;
+
+      document
+        .querySelectorAll(".mode-button")
+        .forEach(other => {
+          other.classList.toggle(
+            "active",
+            other === button
+          );
+        });
+
+      document
+        .querySelectorAll(".scan-tab")
+        .forEach(tab => {
+          tab.classList.toggle(
+            "active",
+            tab.dataset.scan === "functions"
+          );
+        });
+
+      renderAll();
     });
-
-    renderAll();
   });
-});
 
-$("clear").addEventListener("click", () => {
-  selected = null;
-  renderAll();
-});
+document
+  .querySelectorAll(".scan-tab")
+  .forEach(button => {
+    button.addEventListener("click", () => {
+      state.scan = button.dataset.scan;
+      state.selected = null;
 
-initializePython();
+      document
+        .querySelectorAll(".scan-tab")
+        .forEach(other => {
+          other.classList.toggle(
+            "active",
+            other === button
+          );
+        });
+
+      renderAll();
+    });
+  });
+
+$("clearButton").addEventListener(
+  "click",
+  () => {
+    state.selected = null;
+    renderAll();
+  }
+);
 </script>
 </body>
 </html>
