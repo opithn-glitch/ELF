@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ELF String XREF Analyzer</title>
+<title>ELF / SO Analyzer</title>
 
 <style>
 :root {
@@ -34,60 +34,77 @@ body {
 .app {
     max-width: 1800px;
     margin: auto;
-    padding: 20px;
+    padding: 18px;
 }
 
 header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 20px;
     flex-wrap: wrap;
-    padding: 20px;
-    background: linear-gradient(
-        120deg,
-        #111d29,
-        #0e171f
-    );
+    gap: 15px;
+    padding: 18px;
+    background: linear-gradient(120deg, #111d29, #0e171f);
     border: 1px solid var(--border);
     border-radius: 14px;
-    margin-bottom: 16px;
+    margin-bottom: 15px;
 }
 
 h1 {
     margin: 0;
     color: var(--green);
-    font-size: 25px;
+    font-size: 24px;
 }
 
 .subtitle {
     color: var(--muted);
-    margin-top: 8px;
+    margin-top: 7px;
     font-size: 13px;
 }
 
-input,
-select,
-button {
-    font: inherit;
+.uploads {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
 }
 
-input[type="file"] {
-    color: var(--text);
-    background: var(--panel2);
-    padding: 10px;
-    border: 1px solid var(--border);
+.file-label {
+    display: inline-block;
+    background: var(--green);
+    color: #06100b;
+    padding: 10px 13px;
     border-radius: 8px;
-    max-width: 370px;
+    font-weight: bold;
+    cursor: pointer;
 }
- 
+
+.file-label input {
+    display: none;
+}
+
+.status {
+    color: var(--yellow);
+    font-size: 13px;
+    margin: 10px 0;
+    min-height: 20px;
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 14px 0;
+}
+
 button {
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--panel2);
     color: var(--text);
-    padding: 10px 16px;
+    padding: 10px 14px;
     cursor: pointer;
+    font: inherit;
 }
 
 button:hover,
@@ -96,58 +113,49 @@ button.active {
     color: #06100b;
 }
 
-.toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 9px;
-    margin: 15px 0;
-}
-
 .search {
     flex: 1;
-    min-width: 250px;
+    min-width: 220px;
     background: var(--panel);
     color: var(--text);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 12px;
+    padding: 11px;
     direction: ltr;
 }
 
 .cards {
     display: grid;
-    grid-template-columns: repeat(
-        auto-fit,
-        minmax(150px, 1fr)
-    );
-    gap: 12px;
-    margin-bottom: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
 }
 
 .card {
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 16px;
+    padding: 14px;
     text-align: center;
 }
 
 .card-label {
     color: var(--muted);
-    font-size: 13px;
+    font-size: 12px;
 }
 
 .card-value {
     color: var(--green);
-    font-size: 24px;
-    margin-top: 8px;
+    font-size: 21px;
     font-weight: bold;
+    margin-top: 7px;
+    overflow-wrap: anywhere;
 }
 
 .layout {
     display: grid;
-    grid-template-columns: 390px minmax(500px, 1fr) 430px;
-    gap: 14px;
+    grid-template-columns: 360px minmax(350px, 1fr) 400px;
+    gap: 12px;
 }
 
 .panel {
@@ -155,15 +163,16 @@ button.active {
     border: 1px solid var(--border);
     border-radius: 12px;
     overflow: hidden;
-    min-height: 400px;
+    min-width: 0;
+    min-height: 390px;
 }
 
 .panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 10px;
-    padding: 14px;
+    gap: 8px;
+    padding: 12px;
     border-bottom: 1px solid var(--border);
     background: var(--panel2);
 }
@@ -178,16 +187,17 @@ button.active {
 }
 
 .list {
-    max-height: 700px;
+    max-height: 680px;
     overflow-y: auto;
 }
 
 .item {
-    padding: 11px;
+    padding: 10px;
     border-bottom: 1px solid #22303d;
     cursor: pointer;
     direction: ltr;
     text-align: left;
+    overflow-wrap: anywhere;
 }
 
 .item:hover,
@@ -198,24 +208,22 @@ button.active {
 
 .item-main {
     color: var(--text);
-    font-family: monospace;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-family: Consolas, monospace;
+    overflow-wrap: anywhere;
 }
 
 .item-meta {
     color: var(--muted);
-    margin-top: 6px;
-    font-size: 12px;
+    margin-top: 5px;
+    font-size: 11px;
 }
 
 .badge {
     display: inline-block;
     border-radius: 999px;
-    padding: 3px 8px;
+    padding: 3px 7px;
     margin: 2px;
-    font-size: 11px;
+    font-size: 10px;
 }
 
 .badge-green {
@@ -233,36 +241,30 @@ button.active {
     background: var(--yellow);
 }
 
-.badge-red {
-    color: white;
-    background: var(--red);
-}
-
 .badge-purple {
     color: white;
     background: var(--purple);
 }
 
 .details {
-    line-height: 1.8;
+    line-height: 1.7;
 }
 
 .details-section {
-    margin-bottom: 18px;
+    margin-bottom: 16px;
 }
 
 .details-title {
     color: var(--yellow);
     border-bottom: 1px solid var(--border);
-    padding-bottom: 6px;
-    margin-bottom: 8px;
+    padding-bottom: 5px;
+    margin-bottom: 7px;
 }
 
 .kv {
     display: grid;
-    grid-template-columns: 140px 1fr;
-    gap: 6px;
-    direction: rtl;
+    grid-template-columns: 115px 1fr;
+    gap: 5px;
 }
 
 .kv b {
@@ -275,14 +277,14 @@ code,
     text-align: left;
     font-family: Consolas, monospace;
     color: var(--yellow);
-    word-break: break-all;
+    overflow-wrap: anywhere;
 }
 
 .offset-row {
     display: flex;
     justify-content: space-between;
-    gap: 10px;
-    padding: 8px;
+    gap: 8px;
+    padding: 7px;
     border-bottom: 1px solid #24313d;
     direction: ltr;
 }
@@ -292,26 +294,21 @@ code,
 }
 
 .graph-wrap {
-    height: 700px;
-    position: relative;
-    overflow: hidden;
-    background:
-        radial-gradient(
-            circle at 50% 50%,
-            #152331,
-            #0d141c 70%
-        );
+    height: 620px;
+    overflow: auto;
+    background: radial-gradient(circle, #152331, #0d141c 75%);
 }
 
 svg {
     width: 100%;
+    min-width: 480px;
     height: 100%;
 }
 
 .edge {
     stroke: #647c91;
     stroke-width: 1.5;
-    opacity: .7;
+    opacity: .75;
 }
 
 .edge.string {
@@ -332,7 +329,7 @@ svg {
 
 .node text {
     fill: var(--text);
-    font-size: 12px;
+    font-size: 11px;
     pointer-events: none;
     text-anchor: middle;
     dominant-baseline: middle;
@@ -353,13 +350,18 @@ svg {
     stroke: var(--purple);
 }
 
-.node.selected rect {
+.node.section rect {
+    fill: #183a2a;
     stroke: var(--green);
+}
+
+.node.selected rect {
+    stroke: white;
     stroke-width: 4;
 }
 
 .empty {
-    padding: 35px 12px;
+    padding: 30px 10px;
     color: var(--muted);
     text-align: center;
 }
@@ -373,33 +375,61 @@ pre {
     color: #b9d4e6;
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 12px;
-    max-height: 450px;
+    padding: 10px;
+    max-height: 350px;
     overflow: auto;
+}
+
+.table-wrap {
+    overflow: auto;
+    max-height: 680px;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
     direction: ltr;
+    min-width: 650px;
 }
 
 th,
 td {
     border-bottom: 1px solid var(--border);
-    padding: 8px;
+    padding: 7px;
     text-align: left;
-    font-size: 12px;
+    font-size: 11px;
+    vertical-align: top;
 }
 
 th {
+    position: sticky;
+    top: 0;
     color: var(--green);
     background: var(--panel2);
 }
 
-@media (max-width: 1250px) {
+tr.clickable {
+    cursor: pointer;
+}
+
+tr.clickable:hover {
+    background: #203344;
+}
+
+.notice {
+    border: 1px solid #715d2c;
+    background: #292313;
+    color: #f1d98b;
+    padding: 10px;
+    border-radius: 8px;
+    line-height: 1.6;
+    margin-bottom: 12px;
+    font-size: 12px;
+}
+
+@media (max-width: 1150px) {
     .layout {
-        grid-template-columns: 330px 1fr;
+        grid-template-columns: 320px 1fr;
     }
 
     .right-panel {
@@ -407,7 +437,7 @@ th {
     }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 720px) {
     .app {
         padding: 8px;
     }
@@ -417,11 +447,11 @@ th {
     }
 
     .panel {
-        margin-bottom: 12px;
+        margin-bottom: 10px;
     }
 
     .graph-wrap {
-        height: 500px;
+        height: 460px;
     }
 }
 </style>
@@ -432,61 +462,86 @@ th {
 
 <header>
     <div>
-        <h1>ELF String XREF Analyzer</h1>
+        <h1>ELF / SO Analyzer</h1>
         <div class="subtitle">
-            تحليل السلاسل والأوفستات وشبكة العلاقات
+            رفع وتحليل المكتبات، عرض Strings والأوفستات والعلاقات
         </div>
     </div>
 
-    <input
-        id="jsonFile"
-        type="file"
-        accept=".json"
-        onchange="loadJson(event)"
-    >
+    <div class="uploads">
+        <label class="file-label">
+            فتح ملف SO / ELF
+            <input
+                id="elfFile"
+                type="file"
+                accept=".so,.elf,application/octet-stream"
+                onchange="loadElfFile(event)"
+            >
+        </label>
+
+        <label class="file-label">
+            فتح تقرير JSON
+            <input
+                id="jsonFile"
+                type="file"
+                accept=".json,application/json"
+                onchange="loadJsonFile(event)"
+            >
+        </label>
+    </div>
 </header>
+
+<div class="notice">
+    تحليل ملف SO هنا يتم داخل المتصفح ويعرض معلومات ELF الأساسية والنصوص والرموز.
+    لعرض نتائج التحليل المتقدم وشبكة علاقات الدوال، افتح JSON الصادر من h.py.
+</div>
+
+<div id="status" class="status">
+    اختر ملف SO أو تقرير JSON.
+</div>
 
 <div class="toolbar">
     <input
         id="globalSearch"
         class="search"
-        placeholder="ابحث عن String أو RVA أو اسم دالة..."
+        placeholder="Search strings, symbols, sections, functions..."
         oninput="renderAll()"
     >
 
-    <button
-        id="btnStrings"
-        class="active"
-        onclick="setMode('strings')"
-    >
+    <button id="btnStrings" class="active" onclick="setMode('strings')">
         Strings
     </button>
 
-    <button
-        id="btnFunctions"
-        onclick="setMode('functions')"
-    >
+    <button id="btnFunctions" onclick="setMode('functions')">
         Functions
     </button>
 
-    <button
-        id="btnImports"
-        onclick="setMode('imports')"
-    >
+    <button id="btnImports" onclick="setMode('imports')">
         Imports
     </button>
 
-    <button
-        onclick="clearSelection()"
-    >
+    <button id="btnExports" onclick="setMode('exports')">
+        Exports
+    </button>
+
+    <button id="btnSections" onclick="setMode('sections')">
+        Sections
+    </button>
+
+    <button onclick="clearSelection()">
         مسح التحديد
     </button>
 </div>
 
 <div class="cards">
     <div class="card">
+        <div class="card-label">الملف</div>
+        <div id="fileNameCard" class="card-value">-</div>
+    </div>
+
+    <div class="card">
         <div class="card-label">المعمارية</div>
-        <div id="arch" class="card-value">-</div>
+        <div id="archCard" class="card-value">-</div>
     </div>
 
     <div class="card">
@@ -500,13 +555,13 @@ th {
     </div>
 
     <div class="card">
-        <div class="card-label">الأوفستات</div>
-        <div id="offsetCount" class="card-value">0</div>
+        <div class="card-label">Imports</div>
+        <div id="importCount" class="card-value">0</div>
     </div>
 
     <div class="card">
-        <div class="card-label">العلاقات</div>
-        <div id="relationCount" class="card-value">0</div>
+        <div class="card-label">Sections</div>
+        <div id="sectionCount" class="card-value">0</div>
     </div>
 </div>
 
@@ -514,47 +569,30 @@ th {
 
 <section class="panel">
     <div class="panel-header">
-        <span id="listTitle" class="panel-title">
-            قائمة Strings
-        </span>
-
-        <span id="listCount" class="badge badge-green">
-            0
-        </span>
+        <span id="listTitle" class="panel-title">Strings</span>
+        <span id="listCount" class="badge badge-green">0</span>
     </div>
-
-    <div id="mainList" class="list"></div>
+    <div id="mainList" class="list">
+        <div class="empty">حمّل ملف SO أو JSON أولًا</div>
+    </div>
 </section>
 
 <section class="panel">
     <div class="panel-header">
-        <span class="panel-title">
-            شبكة الأوفستات المرتبطة
-        </span>
-
-        <span class="badge badge-yellow">
-            اضغط على عقدة
-        </span>
+        <span class="panel-title">شبكة العلاقات / تفاصيل ELF</span>
+        <span class="badge badge-yellow">اضغط على عنصر</span>
     </div>
-
     <div id="graph" class="graph-wrap">
-        <div class="empty">
-            اختر String أو Function لعرض الشبكة
-        </div>
+        <div class="empty">اختر عنصرًا من القائمة</div>
     </div>
 </section>
 
 <section class="panel right-panel">
     <div class="panel-header">
-        <span class="panel-title">
-            تفاصيل العنصر
-        </span>
+        <span class="panel-title">التفاصيل</span>
     </div>
-
     <div id="details" class="panel-body">
-        <div class="empty">
-            لا يوجد عنصر محدد
-        </div>
+        <div class="empty">لا يوجد عنصر محدد</div>
     </div>
 </section>
 
@@ -562,9 +600,39 @@ th {
 </div>
 
 <script>
+"use strict";
+
 let DATA = null;
+let ELF = null;
 let MODE = "strings";
 let SELECTED = null;
+let VISIBLE_ITEMS = [];
+
+const ELF_SECTION_TYPES = {
+    0: "NULL",
+    1: "PROGBITS",
+    2: "SYMTAB",
+    3: "STRTAB",
+    4: "RELA",
+    5: "HASH",
+    6: "DYNAMIC",
+    7: "NOTE",
+    8: "NOBITS",
+    9: "REL",
+    11: "DYNSYM",
+    14: "INIT_ARRAY",
+    15: "FINI_ARRAY",
+    19: "RELR"
+};
+
+const ELF_MACHINE = {
+    3: "x86",
+    8: "MIPS",
+    40: "ARM",
+    62: "x86-64",
+    183: "AArch64",
+    243: "RISC-V"
+};
 
 function esc(value) {
     return String(value ?? "")
@@ -576,53 +644,40 @@ function esc(value) {
 }
 
 function hex(value) {
-    if (value === undefined || value === null) {
+    if (value === undefined || value === null || value === "") {
         return "-";
     }
 
-    const number = Number(value);
+    let number;
 
-    if (!Number.isFinite(number)) {
-        return String(value);
+    try {
+        number = BigInt(value);
+    } catch {
+        number = BigInt(Math.trunc(Number(value) || 0));
     }
 
-    return "0x" + number
-        .toString(16)
-        .toUpperCase()
-        .padStart(6, "0");
+    return "0x" + number.toString(16).toUpperCase();
 }
 
-function offsetOfFunction(fn) {
-    if (fn.offset !== undefined) {
-        return fn.offset;
-    }
-
-    if (fn.file_offset !== undefined) {
-        return fn.file_offset;
-    }
-
-    return null;
-}
-
-function functionKey(fn) {
-    return String(
-        fn.rva ??
-        fn.offset ??
-        fn.name
-    );
+function safeNumber(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
 }
 
 function getFunctions() {
-    if (!DATA) {
-        return [];
-    }
+    if (!DATA) return [];
 
     return [
         ...(DATA.protection || []),
+        ...(DATA.fixcrash || []),
         ...(DATA.crash || []),
         ...(DATA.related || []),
         ...(DATA.functions || [])
     ];
+}
+
+function functionKey(fn) {
+    return String(fn.rva ?? fn.offset ?? fn.name ?? "");
 }
 
 function uniqueFunctions() {
@@ -630,22 +685,454 @@ function uniqueFunctions() {
 
     for (const fn of getFunctions()) {
         const key = functionKey(fn);
-
-        if (!map.has(key)) {
-            map.set(key, fn);
-        }
+        if (key && !map.has(key)) map.set(key, fn);
     }
 
     return [...map.values()];
 }
 
-function buildStringIndex() {
+function setStatus(text) {
+    document.getElementById("status").textContent = text;
+}
+
+function setMode(mode) {
+    MODE = mode;
+
+    document.querySelectorAll(".toolbar button")
+        .forEach(button => button.classList.remove("active"));
+
+    const map = {
+        strings: "btnStrings",
+        functions: "btnFunctions",
+        imports: "btnImports",
+        exports: "btnExports",
+        sections: "btnSections"
+    };
+
+    document.getElementById(map[mode])
+        ?.classList.add("active");
+
+    renderAll();
+}
+
+function clearSelection() {
+    SELECTED = null;
+    renderAll();
+}
+
+function readCString(bytes, offset, maxLength = 4096) {
+    if (offset < 0 || offset >= bytes.length) return "";
+
+    let end = offset;
+    const limit = Math.min(bytes.length, offset + maxLength);
+
+    while (end < limit && bytes[end] !== 0) end++;
+
+    return new TextDecoder("utf-8", { fatal: false })
+        .decode(bytes.subarray(offset, end));
+}
+
+function readInt(view, offset, size, littleEndian) {
+    if (size === 1) return view.getUint8(offset);
+    if (size === 2) return view.getUint16(offset, littleEndian);
+    if (size === 4) return view.getUint32(offset, littleEndian);
+
+    if (size === 8) {
+        const value = view.getBigUint64(offset, littleEndian);
+        return Number(value);
+    }
+
+    throw new Error("نوع قراءة ELF غير مدعوم");
+}
+
+function parseElf(buffer) {
+    const bytes = new Uint8Array(buffer);
+    const view = new DataView(buffer);
+
+    if (
+        bytes.length < 52 ||
+        bytes[0] !== 0x7f ||
+        bytes[1] !== 0x45 ||
+        bytes[2] !== 0x4c ||
+        bytes[3] !== 0x46
+    ) {
+        throw new Error("الملف لا يبدو ملف ELF صالحًا.");
+    }
+
+    const elfClass = bytes[4];
+    const encoding = bytes[5];
+
+    if (elfClass !== 1 && elfClass !== 2) {
+        throw new Error("فئة ELF غير مدعومة.");
+    }
+
+    if (encoding !== 1 && encoding !== 2) {
+        throw new Error("ترتيب البايتات ELF غير معروف.");
+    }
+
+    const is64 = elfClass === 2;
+    const littleEndian = encoding === 1;
+
+    const machine = readInt(view, 18, 2, littleEndian);
+
+    const sectionOffset = is64
+        ? readInt(view, 40, 8, littleEndian)
+        : readInt(view, 32, 4, littleEndian);
+
+    const sectionEntrySize = readInt(
+        view,
+        is64 ? 58 : 46,
+        2,
+        littleEndian
+    );
+
+    let sectionCount = readInt(
+        view,
+        is64 ? 60 : 48,
+        2,
+        littleEndian
+    );
+
+    let stringIndex = readInt(
+        view,
+        is64 ? 62 : 50,
+        2,
+        littleEndian
+    );
+
+    const expectedSectionSize = is64 ? 64 : 40;
+
+    if (
+        sectionEntrySize < expectedSectionSize ||
+        sectionOffset <= 0 ||
+        sectionOffset >= bytes.length
+    ) {
+        throw new Error(
+            "جدول الأقسام غير موجود أو غير مدعوم في هذا الملف."
+        );
+    }
+
+    function parseSectionHeader(index) {
+        const off = sectionOffset + index * sectionEntrySize;
+
+        if (
+            off < 0 ||
+            off + expectedSectionSize > bytes.length
+        ) {
+            return null;
+        }
+
+        if (is64) {
+            return {
+                nameIndex: readInt(view, off, 4, littleEndian),
+                type: readInt(view, off + 4, 4, littleEndian),
+                flags: readInt(view, off + 8, 8, littleEndian),
+                address: readInt(view, off + 16, 8, littleEndian),
+                offset: readInt(view, off + 24, 8, littleEndian),
+                size: readInt(view, off + 32, 8, littleEndian),
+                link: readInt(view, off + 40, 4, littleEndian),
+                info: readInt(view, off + 44, 4, littleEndian),
+                entrySize: readInt(view, off + 56, 8, littleEndian)
+            };
+        }
+
+        return {
+            nameIndex: readInt(view, off, 4, littleEndian),
+            type: readInt(view, off + 4, 4, littleEndian),
+            flags: readInt(view, off + 8, 4, littleEndian),
+            address: readInt(view, off + 12, 4, littleEndian),
+            offset: readInt(view, off + 16, 4, littleEndian),
+            size: readInt(view, off + 20, 4, littleEndian),
+            link: readInt(view, off + 24, 4, littleEndian),
+            info: readInt(view, off + 28, 4, littleEndian),
+            entrySize: readInt(view, off + 36, 4, littleEndian)
+        };
+    }
+
+    if (sectionCount === 0) {
+        const first = parseSectionHeader(0);
+        if (!first) {
+            throw new Error("تعذر قراءة جدول الأقسام.");
+        }
+        sectionCount = first.size;
+    }
+
+    if (sectionCount > 100000) {
+        throw new Error("عدد الأقسام غير منطقي.");
+    }
+
+    if (stringIndex === 0xffff) {
+        const first = parseSectionHeader(0);
+        stringIndex = first ? first.link : 0;
+    }
+
+    const rawSections = [];
+
+    for (let i = 0; i < sectionCount; i++) {
+        const section = parseSectionHeader(i);
+        if (!section) break;
+        rawSections.push(section);
+    }
+
+    const nameSection = rawSections[stringIndex];
+    const nameTableOffset = nameSection
+        ? nameSection.offset
+        : 0;
+
+    const sections = rawSections.map((section, index) => ({
+        ...section,
+        index,
+        name: nameSection
+            ? readCString(
+                bytes,
+                nameTableOffset + section.nameIndex
+            )
+            : "",
+        typeName: ELF_SECTION_TYPES[section.type] ||
+            "TYPE_" + section.type
+    }));
+
+    function vaddrToOffset(address) {
+        for (const section of sections) {
+            if (
+                section.address &&
+                address >= section.address &&
+                address < section.address + section.size
+            ) {
+                return section.offset + (address - section.address);
+            }
+        }
+
+        return null;
+    }
+
+    const symbols = [];
+    const imports = new Set();
+    const exports = new Set();
+
+    for (const section of sections) {
+        if (section.type !== 2 && section.type !== 11) continue;
+
+        const strSection = sections[section.link];
+        if (!strSection) continue;
+
+        const defaultEntrySize = is64 ? 24 : 16;
+        const entrySize = section.entrySize || defaultEntrySize;
+
+        if (entrySize < defaultEntrySize || !entrySize) continue;
+
+        const count = Math.min(
+            Math.floor(section.size / entrySize),
+            1000000
+        );
+
+        for (let i = 0; i < count; i++) {
+            const off = section.offset + i * entrySize;
+
+            if (off + defaultEntrySize > bytes.length) break;
+
+            let nameOffset;
+            let info;
+            let sectionIndex;
+            let value;
+            let size;
+
+            if (is64) {
+                nameOffset = readInt(view, off, 4, littleEndian);
+                info = bytes[off + 4];
+                sectionIndex = readInt(view, off + 6, 2, littleEndian);
+                value = readInt(view, off + 8, 8, littleEndian);
+                size = readInt(view, off + 16, 8, littleEndian);
+            } else {
+                nameOffset = readInt(view, off, 4, littleEndian);
+                value = readInt(view, off + 4, 4, littleEndian);
+                size = readInt(view, off + 8, 4, littleEndian);
+                info = bytes[off + 12];
+                sectionIndex = readInt(view, off + 14, 2, littleEndian);
+            }
+
+            const name = nameOffset
+                ? readCString(
+                    bytes,
+                    strSection.offset + nameOffset
+                )
+                : "";
+
+            if (!name) continue;
+
+            const type = info & 0x0f;
+            const bind = info >> 4;
+
+            const symbol = {
+                name,
+                value,
+                size,
+                type,
+                bind,
+                sectionIndex,
+                fileOffset: vaddrToOffset(value)
+            };
+
+            symbols.push(symbol);
+
+            if (sectionIndex === 0 && bind !== 0) {
+                imports.add(name);
+            } else if (
+                sectionIndex !== 0 &&
+                (bind === 1 || bind === 2)
+            ) {
+                exports.add(name);
+            }
+        }
+    }
+
+    const strings = extractStrings(bytes, sections);
+
+    return {
+        bytes,
+        is64,
+        littleEndian,
+        machine,
+        architecture: ELF_MACHINE[machine] || "Machine " + machine,
+        sections,
+        symbols,
+        imports: [...imports].sort(),
+        exports: [...exports].sort(),
+        strings,
+        vaddrToOffset
+    };
+}
+
+function extractStrings(bytes, sections) {
+    const result = [];
+    const minLength = 4;
+    const maxStrings = 200000;
+
+    const ranges = sections
+        .filter(section =>
+            section.type !== 8 &&
+            section.size > 0 &&
+            section.offset >= 0 &&
+            section.offset < bytes.length
+        )
+        .map(section => ({
+            start: section.offset,
+            end: Math.min(
+                section.offset + section.size,
+                bytes.length
+            ),
+            section
+        }));
+
+    for (const range of ranges) {
+        let i = range.start;
+
+        while (i < range.end && result.length < maxStrings) {
+            const start = i;
+
+            while (
+                i < range.end &&
+                bytes[i] >= 32 &&
+                bytes[i] <= 126
+            ) {
+                i++;
+            }
+
+            const length = i - start;
+
+            if (length >= minLength) {
+                const text = new TextDecoder("latin1")
+                    .decode(bytes.subarray(start, i));
+
+                result.push({
+                    text,
+                    fileOffset: start,
+                    rva: range.section.address
+                        ? range.section.address + (start - range.section.offset)
+                        : null,
+                    section: range.section.name
+                });
+            }
+
+            i++;
+        }
+    }
+
+    const seen = new Set();
+
+    return result.filter(item => {
+        const key = item.fileOffset + ":" + item.text;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
+async function loadElfFile(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+        setStatus("جاري قراءة ملف المكتبة...");
+
+        const buffer = await file.arrayBuffer();
+        const parsed = parseElf(buffer);
+
+        ELF = parsed;
+        DATA = null;
+        SELECTED = null;
+
+        document.getElementById("fileNameCard")
+            .textContent = file.name;
+
+        document.getElementById("archCard")
+            .textContent = parsed.architecture;
+
+        updateStats();
+        renderAll();
+
+        setStatus(
+            `تم تحليل ${file.name} | ${parsed.is64 ? "ELF64" : "ELF32"} | ` +
+            `${parsed.sections.length} قسم | ${parsed.strings.length} String`
+        );
+    } catch (error) {
+        ELF = null;
+        DATA = null;
+        setStatus("فشل التحليل: " + error.message);
+        renderAll();
+    }
+}
+
+async function loadJsonFile(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+        setStatus("جاري تحميل تقرير JSON...");
+        const text = await file.text();
+        DATA = JSON.parse(text);
+        ELF = null;
+        SELECTED = null;
+
+        document.getElementById("fileNameCard")
+            .textContent = file.name;
+
+        document.getElementById("archCard")
+            .textContent = DATA.arch || DATA.architecture || "-";
+
+        updateStats();
+        renderAll();
+        setStatus("تم تحميل تقرير JSON.");
+    } catch (error) {
+        setStatus("JSON غير صالح: " + error.message);
+    }
+}
+
+function buildJsonStrings() {
     const map = new Map();
 
     for (const fn of uniqueFunctions()) {
-        const strings = fn.strings_ref || [];
-
-        for (const text of strings) {
+        for (const text of fn.strings_ref || []) {
             if (!map.has(text)) {
                 map.set(text, {
                     text,
@@ -656,21 +1143,17 @@ function buildStringIndex() {
             }
 
             const item = map.get(text);
-
             item.functions.push(fn);
 
-            const candidates = [
+            for (const offset of [
                 ...(fn.data_refs || []),
                 ...(fn.xref_offsets || []),
-                fn.rva,
-                offsetOfFunction(fn)
-            ];
-
-            for (const offset of candidates) {
+                fn.rva
+            ]) {
                 if (
                     offset !== undefined &&
                     offset !== null &&
-                    !item.offsets.includes(offset)
+                    !item.offsets.some(x => String(x) === String(offset))
                 ) {
                     item.offsets.push(offset);
                 }
@@ -686,8 +1169,12 @@ function buildStringIndex() {
         .sort((a, b) => a.text.localeCompare(b.text));
 }
 
-function getImports() {
+function getAllImports() {
     const imports = new Set();
+
+    for (const api of DATA?.imports || []) {
+        imports.add(typeof api === "string" ? api : api.name);
+    }
 
     for (const fn of uniqueFunctions()) {
         for (const api of fn.imports_called || []) {
@@ -695,90 +1182,34 @@ function getImports() {
         }
     }
 
-    for (const api of DATA?.imports || []) {
-        imports.add(api);
+    if (ELF) {
+        for (const api of ELF.imports) imports.add(api);
     }
 
-    return [...imports].sort();
+    return [...imports].filter(Boolean).sort();
 }
 
-function searchable(value, query) {
+function currentStrings() {
+    if (ELF) return ELF.strings;
+    if (DATA) return buildJsonStrings();
+    return [];
+}
+
+function searchMatch(value, query) {
     return String(value ?? "")
         .toLowerCase()
         .includes(query);
 }
 
-function setMode(mode) {
-    MODE = mode;
-
-    document.querySelectorAll(".toolbar button")
-        .forEach(btn => btn.classList.remove("active"));
-
-    const button = document.getElementById(
-        mode === "strings"
-            ? "btnStrings"
-            : mode === "functions"
-                ? "btnFunctions"
-                : "btnImports"
-    );
-
-    if (button) {
-        button.classList.add("active");
-    }
-
-    renderAll();
-}
-
-function loadJson(event) {
-    const file = event.target.files[0];
-
-    if (!file) {
-        return;
-    }
-
-    const reader = new FileReader();
-
-    reader.onload = () => {
-        try {
-            DATA = JSON.parse(reader.result);
-            SELECTED = null;
-            updateStats();
-            renderAll();
-        } catch (error) {
-            alert("ملف JSON غير صالح");
-        }
-    };
-
-    reader.readAsText(file);
+function renderAll() {
+    updateStats();
+    renderList();
+    renderSelection();
 }
 
 function updateStats() {
-    if (!DATA) {
-        return;
-    }
-
     const functions = uniqueFunctions();
-    const strings = buildStringIndex();
-
-    const offsets = new Set();
-    let relations = 0;
-
-    for (const fn of functions) {
-        for (const item of fn.xref_offsets || []) {
-            offsets.add(item);
-        }
-
-        for (const item of fn.data_refs || []) {
-            offsets.add(item);
-        }
-
-        relations +=
-            (fn.local_calls || []).length +
-            (fn.strings_ref || []).length;
-    }
-
-    document.getElementById("arch")
-        .textContent = DATA.arch || DATA.architecture || "-";
+    const strings = currentStrings();
 
     document.getElementById("functionCount")
         .textContent = functions.length;
@@ -786,345 +1217,299 @@ function updateStats() {
     document.getElementById("stringCount")
         .textContent = strings.length;
 
-    document.getElementById("offsetCount")
-        .textContent = offsets.size;
+    document.getElementById("importCount")
+        .textContent = getAllImports().length;
 
-    document.getElementById("relationCount")
-        .textContent = relations;
-}
-
-function renderAll() {
-    if (!DATA) {
-        return;
-    }
-
-    renderList();
-    renderSelected();
+    document.getElementById("sectionCount")
+        .textContent = ELF ? ELF.sections.length : 0;
 }
 
 function renderList() {
-    const container = document.getElementById("mainList");
+    const list = document.getElementById("mainList");
     const query = document.getElementById("globalSearch")
-        .value
-        .toLowerCase()
-        .trim();
+        .value.toLowerCase().trim();
 
     let items = [];
 
     if (MODE === "strings") {
-        items = buildStringIndex()
-            .filter(item => {
-                return searchable(item.text, query) ||
-                    item.functions.some(fn =>
-                        searchable(fn.name, query) ||
-                        searchable(hex(fn.rva), query)
-                    );
-            });
+        items = currentStrings().filter(item =>
+            searchMatch(item.text, query)
+        );
 
-        document.getElementById("listTitle")
-            .textContent = "قائمة Strings";
+        document.getElementById("listTitle").textContent =
+            "Strings";
 
-        container.innerHTML = items.map((item, index) => `
-            <div
-                class="item ${
-                    SELECTED?.type === "string" &&
-                    SELECTED?.value === item.text
-                        ? "selected"
-                        : ""
-                }"
-                onclick="selectString(${index})"
-            >
-                <div class="item-main">
-                    ${esc(item.text)}
-                </div>
-
+        list.innerHTML = items.map((item, index) => `
+            <div class="item ${
+                SELECTED?.type === "string" &&
+                SELECTED.key === stringKey(item)
+                    ? "selected"
+                    : ""
+            }" onclick="selectListItem(${index})">
+                <div class="item-main">${esc(item.text)}</div>
                 <div class="item-meta">
-                    <span class="badge badge-yellow">
-                        ${item.offsets.length} offset
-                    </span>
-
-                    <span class="badge badge-blue">
-                        ${item.functions.length} function
-                    </span>
-
-                    <span class="badge badge-purple">
-                        ${item.imports.size} API
-                    </span>
+                    ${item.section ? esc(item.section) + " | " : ""}
+                    ${
+                        item.fileOffset !== undefined
+                            ? "File " + hex(item.fileOffset)
+                            : (item.offsets?.length || 0) + " offsets"
+                    }
+                    ${
+                        item.functions
+                            ? " | " + item.functions.length + " function"
+                            : ""
+                    }
                 </div>
             </div>
         `).join("");
-
-        window.__visibleItems = items;
     }
 
     if (MODE === "functions") {
-        items = uniqueFunctions()
-            .filter(fn => {
-                return searchable(fn.name, query) ||
-                    searchable(hex(fn.rva), query) ||
-                    (fn.strings_ref || [])
-                        .some(s => searchable(s, query));
-            })
-            .sort((a, b) =>
-                Number(b.confidence || b.score || 0) -
-                Number(a.confidence || a.score || 0)
-            );
+        items = uniqueFunctions().filter(fn =>
+            searchMatch(fn.name, query) ||
+            searchMatch(hex(fn.rva), query)
+        );
 
-        document.getElementById("listTitle")
-            .textContent = "قائمة Functions";
+        document.getElementById("listTitle").textContent =
+            "Functions";
 
-        container.innerHTML = items.map((fn, index) => `
-            <div
-                class="item ${
-                    SELECTED?.type === "function" &&
-                    SELECTED?.key === functionKey(fn)
-                        ? "selected"
-                        : ""
-                }"
-                onclick="selectFunction(${index})"
-            >
+        list.innerHTML = items.map((fn, index) => `
+            <div class="item ${
+                SELECTED?.type === "function" &&
+                SELECTED.key === functionKey(fn)
+                    ? "selected"
+                    : ""
+            }" onclick="selectListItem(${index})">
                 <div class="item-main">
                     ${esc(fn.name || "sub_" + hex(fn.rva))}
                 </div>
-
                 <div class="item-meta">
-                    <span class="badge badge-blue">
-                        RVA ${hex(fn.rva)}
-                    </span>
-
-                    <span class="badge badge-green">
-                        ثقة ${fn.confidence ?? fn.score ?? 0}%
-                    </span>
-
-                    <span class="badge badge-yellow">
-                        Strings ${(fn.strings_ref || []).length}
-                    </span>
+                    RVA ${hex(fn.rva)}
+                    | Confidence ${fn.confidence ?? fn.score ?? 0}%
                 </div>
             </div>
         `).join("");
-
-        window.__visibleItems = items;
     }
 
-    if (MODE === "imports") {
-        items = getImports()
-            .filter(api => searchable(api, query));
+    if (MODE === "imports" || MODE === "exports") {
+        const source = ELF
+            ? (MODE === "imports" ? ELF.imports : ELF.exports)
+            : getAllImports();
 
-        document.getElementById("listTitle")
-            .textContent = "قائمة Imports";
+        items = source.filter(name =>
+            searchMatch(name, query)
+        );
 
-        container.innerHTML = items.map((api, index) => `
-            <div
-                class="item ${
-                    SELECTED?.type === "import" &&
-                    SELECTED?.value === api
-                        ? "selected"
-                        : ""
-                }"
-                onclick="selectImport(${index})"
-            >
+        document.getElementById("listTitle").textContent =
+            MODE === "imports" ? "Imports" : "Exports";
+
+        list.innerHTML = items.map((name, index) => `
+            <div class="item ${
+                SELECTED?.type === MODE &&
+                SELECTED.value === name
+                    ? "selected"
+                    : ""
+            }" onclick="selectListItem(${index})">
+                <div class="item-main">${esc(name)}</div>
+            </div>
+        `).join("");
+    }
+
+    if (MODE === "sections") {
+        items = ELF
+            ? ELF.sections.filter(section =>
+                searchMatch(section.name, query) ||
+                searchMatch(section.typeName, query)
+            )
+            : [];
+
+        document.getElementById("listTitle").textContent =
+            "Sections";
+
+        list.innerHTML = items.map((section, index) => `
+            <div class="item ${
+                SELECTED?.type === "section" &&
+                SELECTED.key === String(section.index)
+                    ? "selected"
+                    : ""
+            }" onclick="selectListItem(${index})">
                 <div class="item-main">
-                    ${esc(api)}
+                    ${esc(section.name || "(unnamed)")}
                 </div>
-
                 <div class="item-meta">
-                    ${countImportFunctions(api)} دالة مرتبطة
+                    ${esc(section.typeName)}
+                    | Address ${hex(section.address)}
+                    | Offset ${hex(section.offset)}
+                    | Size ${section.size}
                 </div>
             </div>
         `).join("");
-
-        window.__visibleItems = items;
     }
 
-    document.getElementById("listCount")
-        .textContent = items.length;
+    VISIBLE_ITEMS = items;
+    document.getElementById("listCount").textContent = items.length;
 
     if (!items.length) {
-        container.innerHTML = `
-            <div class="empty">
-                لا توجد نتائج
-            </div>
-        `;
+        list.innerHTML = `<div class="empty">لا توجد نتائج</div>`;
     }
 }
 
-function selectString(index) {
-    const item = window.__visibleItems[index];
+function stringKey(item) {
+    return String(item.text) + "|" +
+        String(item.fileOffset ?? item.offsets?.join(",") ?? "");
+}
 
-    SELECTED = {
-        type: "string",
-        value: item.text,
-        data: item
-    };
+function selectListItem(index) {
+    const item = VISIBLE_ITEMS[index];
+
+    if (MODE === "strings") {
+        SELECTED = {
+            type: "string",
+            key: stringKey(item),
+            value: item,
+            data: item
+        };
+    } else if (MODE === "functions") {
+        SELECTED = {
+            type: "function",
+            key: functionKey(item),
+            value: item,
+            data: item
+        };
+    } else if (MODE === "imports" || MODE === "exports") {
+        SELECTED = {
+            type: MODE,
+            value: item,
+            data: item
+        };
+    } else if (MODE === "sections") {
+        SELECTED = {
+            type: "section",
+            key: String(item.index),
+            value: item,
+            data: item
+        };
+    }
 
     renderAll();
 }
 
-function selectFunction(index) {
-    const fn = window.__visibleItems[index];
+function renderSelection() {
+    const details = document.getElementById("details");
+    const graph = document.getElementById("graph");
 
-    SELECTED = {
-        type: "function",
-        key: functionKey(fn),
-        value: fn,
-        data: fn
-    };
-
-    renderAll();
-}
-
-function selectImport(index) {
-    const api = window.__visibleItems[index];
-
-    SELECTED = {
-        type: "import",
-        value: api,
-        data: api
-    };
-
-    renderAll();
-}
-
-function clearSelection() {
-    SELECTED = null;
-    renderAll();
-}
-
-function countImportFunctions(api) {
-    return uniqueFunctions()
-        .filter(fn =>
-            (fn.imports_called || []).includes(api)
-        )
-        .length;
-}
-
-function renderSelected() {
     if (!SELECTED) {
-        document.getElementById("details")
-            .innerHTML = `
-                <div class="empty">
-                    لا يوجد عنصر محدد
-                </div>
-            `;
-
-        document.getElementById("graph")
-            .innerHTML = `
-                <div class="empty">
-                    اختر String أو Function لعرض الشبكة
-                </div>
-            `;
-
+        details.innerHTML = `<div class="empty">لا يوجد عنصر محدد</div>`;
+        graph.innerHTML = `<div class="empty">اختر عنصرًا من القائمة</div>`;
         return;
     }
 
     if (SELECTED.type === "string") {
         renderStringDetails(SELECTED.data);
-        renderStringGraph(SELECTED.data);
-    }
-
-    if (SELECTED.type === "function") {
+        if (SELECTED.data.functions) {
+            renderFunctionNetwork(SELECTED.data.functions);
+        } else {
+            renderSimpleStringGraph(SELECTED.data);
+        }
+    } else if (SELECTED.type === "function") {
         renderFunctionDetails(SELECTED.data);
-        renderFunctionGraph(SELECTED.data);
-    }
-
-    if (SELECTED.type === "import") {
-        renderImportDetails(SELECTED.value);
-        renderImportGraph(SELECTED.value);
+        renderFunctionNetwork([SELECTED.data]);
+    } else if (SELECTED.type === "section") {
+        renderSectionDetails(SELECTED.data);
+    } else if (SELECTED.type === "imports" || SELECTED.type === "exports") {
+        renderSymbolDetails(SELECTED.value, SELECTED.type);
     }
 }
 
 function renderStringDetails(item) {
-    const offsets = item.offsets
-        .map(offset => `
-            <div class="offset-row">
-                <span>RVA</span>
-                <code>${hex(offset)}</code>
-            </div>
-        `)
-        .join("");
-
-    const functions = item.functions
-        .map(fn => `
-            <div
-                class="item"
-                onclick='selectFunctionByKey(${JSON.stringify(functionKey(fn))})'
-            >
-                <div class="item-main">
-                    ${esc(fn.name || "sub_" + hex(fn.rva))}
-                </div>
-
-                <div class="item-meta">
-                    RVA ${hex(fn.rva)}
-                    |
-                    File Offset ${hex(offsetOfFunction(fn))}
-                    |
-                    ثقة ${fn.confidence ?? fn.score ?? 0}%
-                </div>
-            </div>
-        `)
-        .join("");
-
-    const imports = [...item.imports]
-        .map(api => `
-            <span class="badge badge-purple">
-                ${esc(api)}
-            </span>
-        `)
-        .join("");
-
-    document.getElementById("details")
-        .innerHTML = `
+    if (ELF) {
+        document.getElementById("details").innerHTML = `
             <div class="details">
                 <div class="details-section">
-                    <div class="details-title">
-                        String
-                    </div>
-
+                    <div class="details-title">String</div>
                     <pre>${esc(item.text)}</pre>
                 </div>
 
                 <div class="details-section">
-                    <div class="details-title">
-                        جميع الأوفستات (${item.offsets.length})
+                    <div class="details-title">معلومات الموقع</div>
+                    <div class="kv">
+                        <b>File Offset</b>
+                        <code>${hex(item.fileOffset)}</code>
+                        <b>RVA</b>
+                        <code>${hex(item.rva)}</code>
+                        <b>Section</b>
+                        <code>${esc(item.section || "-")}</code>
                     </div>
-
-                    ${offsets || `
-                        <div class="empty">
-                            لا توجد أوفستات مسجلة
-                        </div>
-                    `}
                 </div>
 
                 <div class="details-section">
-                    <div class="details-title">
-                        الدوال المرتبطة (${item.functions.length})
+                    <div class="details-title">ملاحظة</div>
+                    <div class="subtitle">
+                        هذه نسخة المتصفح تعرض موقع السلسلة داخل الملف.
+                        تحديد كل تعليمات أو دوال تشير إليها يحتاج تحليل XREF إضافيًا.
                     </div>
-
-                    ${functions || `
-                        <div class="empty">
-                            لا توجد دوال مرتبطة
-                        </div>
-                    `}
-                </div>
-
-                <div class="details-section">
-                    <div class="details-title">
-                        APIs المرتبطة
-                    </div>
-
-                    ${imports || "-"}
                 </div>
             </div>
         `;
-}
-
-function selectFunctionByKey(key) {
-    const fn = uniqueFunctions()
-        .find(item => functionKey(item) === String(key));
-
-    if (!fn) {
         return;
     }
+
+    const offsets = (item.offsets || []).map(value => `
+        <div class="offset-row">
+            <span>RVA / Ref</span>
+            <code>${hex(value)}</code>
+        </div>
+    `).join("");
+
+    const functions = (item.functions || []).map((fn, index) => `
+        <div class="item" onclick="selectRelatedFunction(${index})">
+            <div class="item-main">
+                ${esc(fn.name || "sub_" + hex(fn.rva))}
+            </div>
+            <div class="item-meta">
+                RVA ${hex(fn.rva)}
+                | Offset ${hex(fn.offset)}
+                | Confidence ${fn.confidence ?? fn.score ?? 0}%
+            </div>
+        </div>
+    `).join("");
+
+    const imports = [...(item.imports || [])].map(api => `
+        <span class="badge badge-purple">${esc(api)}</span>
+    `).join("");
+
+    document.getElementById("details").innerHTML = `
+        <div class="details">
+            <div class="details-section">
+                <div class="details-title">String</div>
+                <pre>${esc(item.text)}</pre>
+            </div>
+
+            <div class="details-section">
+                <div class="details-title">
+                    الأوفستات المرتبطة (${item.offsets?.length || 0})
+                </div>
+                ${offsets || `<div class="empty">لا توجد أوفستات مسجلة بالتقرير</div>`}
+            </div>
+
+            <div class="details-section">
+                <div class="details-title">
+                    الدوال المرتبطة (${item.functions?.length || 0})
+                </div>
+                ${functions || `<div class="empty">لا توجد دوال مرتبطة</div>`}
+            </div>
+
+            <div class="details-section">
+                <div class="details-title">Imports مرتبطة</div>
+                ${imports || "-"}
+            </div>
+        </div>
+    `;
+}
+
+function selectRelatedFunction(index) {
+    const fn = SELECTED?.data?.functions?.[index];
+    if (!fn) return;
 
     SELECTED = {
         type: "function",
@@ -1137,494 +1522,289 @@ function selectFunctionByKey(key) {
 }
 
 function renderFunctionDetails(fn) {
-    const strings = (fn.strings_ref || [])
-        .map(text => `
-            <div
-                class="item"
-                onclick='selectStringByValue(${JSON.stringify(text)})'
-            >
-                <div class="item-main">
-                    ${esc(text)}
+    const strings = (fn.strings_ref || []).map(text => `
+        <div class="item" onclick="selectStringFromFunction(${JSON.stringify(text)})">
+            <div class="item-main">${esc(text)}</div>
+        </div>
+    `).join("");
+
+    const refs = [
+        ...(fn.data_refs || []),
+        ...(fn.xref_offsets || [])
+    ];
+
+    const refRows = [...new Set(refs.map(String))].map(ref => `
+        <div class="offset-row">
+            <span>Data Ref</span>
+            <code>${hex(ref)}</code>
+        </div>
+    `).join("");
+
+    const calls = (fn.local_calls || []).map(rva => `
+        <div class="offset-row">
+            <span>Local Call RVA</span>
+            <code>${hex(rva)}</code>
+        </div>
+    `).join("");
+
+    const imports = (fn.imports_called || []).map(api => `
+        <span class="badge badge-purple">${esc(api)}</span>
+    `).join("");
+
+    document.getElementById("details").innerHTML = `
+        <div class="details">
+            <div class="details-section">
+                <div class="details-title">معلومات الدالة</div>
+                <div class="kv">
+                    <b>Name</b><code>${esc(fn.name || "-")}</code>
+                    <b>RVA</b><code>${hex(fn.rva)}</code>
+                    <b>File Offset</b><code>${hex(fn.offset)}</code>
+                    <b>Size</b><span>${fn.size ?? "-"} bytes</span>
+                    <b>Confidence</b><span>${fn.confidence ?? fn.score ?? 0}%</span>
+                    <b>Callers</b><span>${fn.n_callers ?? 0}</span>
+                    <b>Callees</b><span>${fn.n_callees ?? 0}</span>
                 </div>
             </div>
-        `)
-        .join("");
 
-    const calls = (fn.local_calls || [])
-        .map(rva => `
-            <div
-                class="offset-row"
-                onclick='selectFunctionByRva(${Number(rva)})'
-            >
-                <span>Local Call</span>
-                <code>${hex(rva)}</code>
+            <div class="details-section">
+                <div class="details-title">Strings</div>
+                ${strings || "-"}
             </div>
-        `)
-        .join("");
 
-    const imports = (fn.imports_called || [])
-        .map(api => `
-            <span class="badge badge-purple">
-                ${esc(api)}
-            </span>
-        `)
-        .join("");
-
-    const dataRefs = (fn.data_refs || fn.xref_offsets || [])
-        .map(offset => `
-            <div class="offset-row">
-                <span>Data Ref</span>
-                <code>${hex(offset)}</code>
+            <div class="details-section">
+                <div class="details-title">Data References</div>
+                ${refRows || "-"}
             </div>
-        `)
-        .join("");
 
-    document.getElementById("details")
-        .innerHTML = `
-            <div class="details">
-                <div class="details-section">
-                    <div class="details-title">
-                        معلومات الدالة
-                    </div>
-
-                    <div class="kv">
-                        <b>الاسم</b>
-                        <code>${esc(fn.name || "-")}</code>
-
-                        <b>RVA</b>
-                        <code>${hex(fn.rva)}</code>
-
-                        <b>File Offset</b>
-                        <code>${hex(offsetOfFunction(fn))}</code>
-
-                        <b>النهاية</b>
-                        <code>${hex(fn.end)}</code>
-
-                        <b>الحجم</b>
-                        <span>${fn.size ?? "-"} bytes</span>
-
-                        <b>الثقة</b>
-                        <span>${fn.confidence ?? fn.score ?? 0}%</span>
-
-                        <b>المستدعية</b>
-                        <span>${fn.n_callers ?? 0}</span>
-
-                        <b>المستدعاة</b>
-                        <span>${fn.n_callees ?? 0}</span>
-                    </div>
-                </div>
-
-                <div class="details-section">
-                    <div class="details-title">
-                        Strings (${(fn.strings_ref || []).length})
-                    </div>
-
-                    ${strings || "-"}
-                </div>
-
-                <div class="details-section">
-                    <div class="details-title">
-                        Data References
-                    </div>
-
-                    ${dataRefs || "-"}
-                </div>
-
-                <div class="details-section">
-                    <div class="details-title">
-                        Local Calls
-                    </div>
-
-                    ${calls || "-"}
-                </div>
-
-                <div class="details-section">
-                    <div class="details-title">
-                        Imports
-                    </div>
-
-                    ${imports || "-"}
-                </div>
-
-                <div class="details-section">
-                    <div class="details-title">
-                        Disassembly
-                    </div>
-
-                    <pre>${esc(formatDisasm(fn.disasm || []))}</pre>
-                </div>
+            <div class="details-section">
+                <div class="details-title">Local Calls</div>
+                ${calls || "-"}
             </div>
-        `;
+
+            <div class="details-section">
+                <div class="details-title">Imports</div>
+                ${imports || "-"}
+            </div>
+
+            <div class="details-section">
+                <div class="details-title">Disassembly</div>
+                <pre>${esc(formatDisasm(fn.disasm || []))}</pre>
+            </div>
+        </div>
+    `;
 }
 
-function selectStringByValue(value) {
-    const item = buildStringIndex()
-        .find(entry => entry.text === value);
+function selectStringFromFunction(text) {
+    const item = buildJsonStrings()
+        .find(entry => entry.text === text);
 
-    if (!item) {
-        return;
-    }
+    if (!item) return;
 
     SELECTED = {
         type: "string",
-        value,
+        key: stringKey(item),
+        value: item,
         data: item
     };
 
     renderAll();
 }
 
-function selectFunctionByRva(rva) {
-    const fn = uniqueFunctions()
-        .find(item => Number(item.rva) === Number(rva));
-
-    if (!fn) {
-        return;
-    }
-
-    SELECTED = {
-        type: "function",
-        key: functionKey(fn),
-        value: fn,
-        data: fn
-    };
-
-    renderAll();
-}
-
-function renderImportDetails(api) {
-    const functions = uniqueFunctions()
-        .filter(fn =>
-            (fn.imports_called || []).includes(api)
-        );
-
-    document.getElementById("details")
-        .innerHTML = `
-            <div class="details">
-                <div class="details-section">
-                    <div class="details-title">
-                        Import
-                    </div>
-
-                    <pre>${esc(api)}</pre>
-                </div>
-
-                <div class="details-section">
-                    <div class="details-title">
-                        الدوال التي تستدعيه
-                        (${functions.length})
-                    </div>
-
-                    ${functions.map(fn => `
-                        <div
-                            class="item"
-                            onclick='selectFunctionByKey(${JSON.stringify(functionKey(fn))})'
-                        >
-                            <div class="item-main">
-                                ${esc(fn.name || "sub_" + hex(fn.rva))}
-                            </div>
-
-                            <div class="item-meta">
-                                ${hex(fn.rva)}
-                            </div>
-                        </div>
-                    `).join("")}
-                </div>
-            </div>
-        `;
-}
-
 function formatDisasm(disasm) {
-    return disasm
-        .slice(0, 500)
-        .map(ins => {
-            const pc = hex(ins.pc);
-            const raw = ins.hex || "";
-            const mnemonic = ins.mnemonic || "";
-            const operands = ins.operands || "";
+    return disasm.slice(0, 500).map(ins => {
+        const pc = hex(ins.pc);
+        const raw = ins.hex || "";
+        const mnemonic = ins.mnemonic || "";
+        const operands = ins.operands || "";
 
-            return `${pc.padEnd(12)} ${raw.padEnd(12)} ${mnemonic.padEnd(10)} ${operands}`;
-        })
-        .join("
+        return `${pc.padEnd(14)} ${raw.padEnd(12)} ${mnemonic.padEnd(10)} ${operands}`;
+    }).join("
 ");
 }
 
-function renderStringGraph(item) {
+function renderSectionDetails(section) {
+    const flags = [];
+    if (section.flags & 1) flags.push("WRITE");
+    if (section.flags & 2) flags.push("ALLOC");
+    if (section.flags & 4) flags.push("EXEC");
+
+    document.getElementById("details").innerHTML = `
+        <div class="details">
+            <div class="details-title">Section</div>
+            <div class="kv">
+                <b>Name</b><code>${esc(section.name || "(unnamed)")}</code>
+                <b>Type</b><code>${esc(section.typeName)}</code>
+                <b>Address</b><code>${hex(section.address)}</code>
+                <b>File Offset</b><code>${hex(section.offset)}</code>
+                <b>Size</b><span>${section.size} bytes</span>
+                <b>Flags</b><span>${flags.join(", ") || "-"}</span>
+            </div>
+        </div>
+    `;
+
+    renderSectionGraph(section);
+}
+
+function renderSymbolDetails(name, type) {
+    const symbols = ELF
+        ? ELF.symbols.filter(s => s.name === name)
+        : [];
+
+    document.getElementById("details").innerHTML = `
+        <div class="details">
+            <div class="details-title">${esc(type)}: ${esc(name)}</div>
+            ${
+                symbols.map(symbol => `
+                    <div class="kv">
+                        <b>Value</b><code>${hex(symbol.value)}</code>
+                        <b>File Offset</b><code>${hex(symbol.fileOffset)}</code>
+                        <b>Size</b><span>${symbol.size}</span>
+                        <b>Section Index</b><span>${symbol.sectionIndex}</span>
+                    </div>
+                `).join("") || `<div class="empty">لا توجد تفاصيل رمز إضافية</div>`
+            }
+        </div>
+    `;
+
+    renderSimpleNodes([
+        { id: "sym:" + name, type: "import", label: name, meta: name }
+    ], []);
+}
+
+function renderSimpleStringGraph(item) {
+    const nodes = [
+        {
+            id: "str:" + item.fileOffset,
+            type: "string",
+            label: item.text,
+            meta: item
+        },
+        {
+            id: "offset:" + item.fileOffset,
+            type: "section",
+            label: "File " + hex(item.fileOffset),
+            meta: item
+        }
+    ];
+
+    renderSimpleNodes(nodes, [{
+        from: nodes[0].id,
+        to: nodes[1].id,
+        type: "string"
+    }]);
+}
+
+function renderSectionGraph(section) {
+    const nodes = [{
+        id: "section:" + section.index,
+        type: "section",
+        label: section.name || section.typeName,
+        meta: section
+    }];
+
+    renderSimpleNodes(nodes, []);
+}
+
+function renderFunctionNetwork(functions) {
     const nodes = [];
     const edges = [];
-    const nodeMap = new Map();
+    const seen = new Set();
 
-    function addNode(id, type, label, meta) {
-        if (nodeMap.has(id)) {
-            return;
-        }
-
-        const node = {
-            id,
-            type,
-            label,
-            meta
-        };
-
-        nodeMap.set(id, node);
+    function addNode(node) {
+        if (seen.has(node.id)) return;
+        seen.add(node.id);
         nodes.push(node);
     }
 
-    addNode(
-        "string:" + item.text,
-        "string",
-        item.text.slice(0, 28),
-        item.text
-    );
+    for (const fn of functions) {
+        const fnId = "fn:" + functionKey(fn);
 
-    for (const fn of item.functions) {
-        const id = "fn:" + functionKey(fn);
-
-        addNode(
-            id,
-            "function",
-            fn.name || "sub_" + hex(fn.rva),
-            fn
-        );
-
-        edges.push({
-            from: id,
-            to: "string:" + item.text,
-            type: "string"
+        addNode({
+            id: fnId,
+            type: "function",
+            label: fn.name || "sub_" + hex(fn.rva),
+            meta: fn
         });
 
-        for (const call of fn.local_calls || []) {
-            const called = uniqueFunctions()
-                .find(x => Number(x.rva) === Number(call));
+        for (const text of fn.strings_ref || []) {
+            const strId = "str:" + text;
 
-            if (!called) {
-                continue;
-            }
-
-            const calledId = "fn:" + functionKey(called);
-
-            addNode(
-                calledId,
-                "function",
-                called.name || "sub_" + hex(called.rva),
-                called
-            );
+            addNode({
+                id: strId,
+                type: "string",
+                label: text,
+                meta: text
+            });
 
             edges.push({
-                from: id,
-                to: calledId,
-                type: "call"
+                from: fnId,
+                to: strId,
+                type: "string"
             });
         }
 
         for (const api of fn.imports_called || []) {
-            const importId = "import:" + api;
+            const apiId = "api:" + api;
 
-            addNode(
-                importId,
-                "import",
-                api,
-                api
-            );
+            addNode({
+                id: apiId,
+                type: "import",
+                label: api,
+                meta: api
+            });
 
             edges.push({
-                from: id,
-                to: importId,
+                from: fnId,
+                to: apiId,
+                type: "call"
+            });
+        }
+
+        for (const rva of fn.local_calls || []) {
+            const target = uniqueFunctions()
+                .find(item => Number(item.rva) === Number(rva));
+
+            const targetId = "fn:" + (target
+                ? functionKey(target)
+                : String(rva));
+
+            addNode({
+                id: targetId,
+                type: "function",
+                label: target?.name || "sub_" + hex(rva),
+                meta: target || { rva, name: "sub_" + hex(rva) }
+            });
+
+            edges.push({
+                from: fnId,
+                to: targetId,
                 type: "call"
             });
         }
     }
 
-    drawGraph(nodes, edges);
+    renderSimpleNodes(nodes, edges);
 }
 
-function renderFunctionGraph(fn) {
-    const nodes = [];
-    const edges = [];
-    const nodeMap = new Map();
-
-    function addNode(id, type, label, meta) {
-        if (nodeMap.has(id)) {
-            return;
-        }
-
-        const node = {
-            id,
-            type,
-            label,
-            meta
-        };
-
-        nodeMap.set(id, node);
-        nodes.push(node);
-    }
-
-    const rootId = "fn:" + functionKey(fn);
-
-    addNode(
-        rootId,
-        "function",
-        fn.name || "sub_" + hex(fn.rva),
-        fn
-    );
-
-    for (const text of fn.strings_ref || []) {
-        const id = "string:" + text;
-
-        addNode(
-            id,
-            "string",
-            text.slice(0, 28),
-            text
-        );
-
-        edges.push({
-            from: rootId,
-            to: id,
-            type: "string"
-        });
-    }
-
-    for (const call of fn.local_calls || []) {
-        const called = uniqueFunctions()
-            .find(x => Number(x.rva) === Number(call));
-
-        if (!called) {
-            continue;
-        }
-
-        const id = "fn:" + functionKey(called);
-
-        addNode(
-            id,
-            "function",
-            called.name || "sub_" + hex(called.rva),
-            called
-        );
-
-        edges.push({
-            from: rootId,
-            to: id,
-            type: "call"
-        });
-    }
-
-    for (const api of fn.imports_called || []) {
-        const id = "import:" + api;
-
-        addNode(
-            id,
-            "import",
-            api,
-            api
-        );
-
-        edges.push({
-            from: rootId,
-            to: id,
-            type: "call"
-        });
-    }
-
-    drawGraph(nodes, edges);
-}
-
-function renderImportGraph(api) {
-    const nodes = [];
-    const edges = [];
-    const nodeMap = new Map();
-
-    function addNode(id, type, label, meta) {
-        if (nodeMap.has(id)) {
-            return;
-        }
-
-        const node = {
-            id,
-            type,
-            label,
-            meta
-        };
-
-        nodeMap.set(id, node);
-        nodes.push(node);
-    }
-
-    const rootId = "import:" + api;
-
-    addNode(
-        rootId,
-        "import",
-        api,
-        api
-    );
-
-    for (const fn of uniqueFunctions()) {
-        if (!(fn.imports_called || []).includes(api)) {
-            continue;
-        }
-
-        const id = "fn:" + functionKey(fn);
-
-        addNode(
-            id,
-            "function",
-            fn.name || "sub_" + hex(fn.rva),
-            fn
-        );
-
-        edges.push({
-            from: id,
-            to: rootId,
-            type: "call"
-        });
-
-        for (const text of fn.strings_ref || []) {
-            const stringId = "string:" + text;
-
-            addNode(
-                stringId,
-                "string",
-                text.slice(0, 28),
-                text
-            );
-
-            edges.push({
-                from: id,
-                to: stringId,
-                type: "string"
-            });
-        }
-    }
-
-    drawGraph(nodes, edges);
-}
-
-function drawGraph(nodes, edges) {
+function renderSimpleNodes(nodes, edges) {
     const graph = document.getElementById("graph");
 
     if (!nodes.length) {
-        graph.innerHTML = `
-            <div class="empty">
-                لا توجد علاقات لعرضها
-            </div>
-        `;
-
+        graph.innerHTML = `<div class="empty">لا توجد بيانات للرسم</div>`;
         return;
     }
 
-    const width = graph.clientWidth || 700;
-    const height = graph.clientHeight || 700;
-
+    const width = Math.max(graph.clientWidth, 480);
+    const height = Math.max(graph.clientHeight, 400);
     const centerX = width / 2;
     const centerY = height / 2;
-    const radius = Math.min(width, height) * .34;
-
+    const radius = Math.min(width, height) * 0.34;
     const positions = new Map();
 
     nodes.forEach((node, index) => {
-        const angle =
-            (Math.PI * 2 * index) / nodes.length;
+        const angle = nodes.length === 1
+            ? 0
+            : (Math.PI * 2 * index) / nodes.length;
 
         positions.set(node.id, {
             x: centerX + Math.cos(angle) * radius,
@@ -1632,164 +1812,93 @@ function drawGraph(nodes, edges) {
         });
     });
 
-    const defs = `
-        <defs>
-            <marker
-                id="arrow"
-                markerWidth="8"
-                markerHeight="8"
-                refX="7"
-                refY="3"
-                orient="auto"
-            >
-                <path
-                    d="M0,0 L0,6 L8,3 z"
-                    fill="#647c91"
-                />
-            </marker>
-        </defs>
-    `;
-
-    const edgeSvg = edges.map(edge => {
+    const lineHtml = edges.map(edge => {
         const from = positions.get(edge.from);
         const to = positions.get(edge.to);
-
-        if (!from || !to) {
-            return "";
-        }
+        if (!from || !to) return "";
 
         return `
             <line
-                class="edge ${edge.type}"
+                class="edge ${edge.type || ""}"
                 x1="${from.x}"
                 y1="${from.y}"
                 x2="${to.x}"
                 y2="${to.y}"
-                marker-end="url(#arrow)"
             />
         `;
     }).join("");
 
-    const nodeSvg = nodes.map(node => {
-        const p = positions.get(node.id);
-        const widthNode = 150;
-        const heightNode = 46;
-
-        const selected =
-            selectedNode(node)
-                ? "selected"
-                : "";
+    const nodeHtml = nodes.map(node => {
+        const pos = positions.get(node.id);
+        const w = 160;
+        const h = 48;
+        const text = String(node.label || "");
+        const short = text.length > 24
+            ? text.slice(0, 21) + "..."
+            : text;
 
         return `
             <g
-                class="node ${node.type} ${selected}"
-                transform="translate(
-                    ${p.x - widthNode / 2},
-                    ${p.y - heightNode / 2}
-                )"
-                onclick='selectGraphNode(${JSON.stringify(node.id)})'
+                class="node ${node.type}"
+                transform="translate(${pos.x - w / 2},${pos.y - h / 2})"
+                onclick="selectGraphNode(${JSON.stringify(node.id)})"
             >
-                <rect
-                    width="${widthNode}"
-                    height="${heightNode}"
-                    rx="8"
-                />
-
-                <text
-                    x="${widthNode / 2}"
-                    y="18"
-                >
-                    ${esc(shorten(node.label, 22))}
-                </text>
-
-                <text
-                    x="${widthNode / 2}"
-                    y="35"
-                    style="font-size:10px;fill:#9fb0bf"
-                >
-                    ${node.type}
+                <rect width="${w}" height="${h}" rx="8"></rect>
+                <text x="${w / 2}" y="18">${esc(short)}</text>
+                <text x="${w / 2}" y="36" style="font-size:9px;fill:#9fb0bf">
+                    ${esc(node.type)}
                 </text>
             </g>
         `;
     }).join("");
 
     graph.innerHTML = `
-        <svg
-            viewBox="0 0 ${width} ${height}"
-            preserveAspectRatio="xMidYMid meet"
-        >
-            ${defs}
-            ${edgeSvg}
-            ${nodeSvg}
+        <svg viewBox="0 0 ${width} ${height}">
+            ${lineHtml}
+            ${nodeHtml}
         </svg>
     `;
-}
 
-function selectedNode(node) {
-    if (!SELECTED) {
-        return false;
-    }
-
-    if (
-        node.type === "string" &&
-        SELECTED.type === "string"
-    ) {
-        return node.meta === SELECTED.value;
-    }
-
-    if (
-        node.type === "function" &&
-        SELECTED.type === "function"
-    ) {
-        return functionKey(node.meta) === SELECTED.key;
-    }
-
-    if (
-        node.type === "import" &&
-        SELECTED.type === "import"
-    ) {
-        return node.meta === SELECTED.value;
-    }
-
-    return false;
+    window.__graphNodes = nodes;
 }
 
 function selectGraphNode(id) {
-    if (id.startsWith("string:")) {
-        selectStringByValue(
-            id.slice("string:".length)
-        );
-        return;
-    }
+    const node = (window.__graphNodes || [])
+        .find(item => item.id === id);
 
-    if (id.startsWith("import:")) {
-        const api = id.slice("import:".length);
+    if (!node) return;
 
+    if (node.type === "function") {
         SELECTED = {
-            type: "import",
-            value: api,
-            data: api
+            type: "function",
+            key: functionKey(node.meta),
+            value: node.meta,
+            data: node.meta
         };
+    } else if (node.type === "string" && node.meta?.text) {
+        SELECTED = {
+            type: "string",
+            key: stringKey(node.meta),
+            value: node.meta,
+            data: node.meta
+        };
+    } else if (node.type === "string") {
+        const item = buildJsonStrings()
+            .find(entry => entry.text === node.meta);
 
-        renderAll();
-        return;
+        if (item) {
+            SELECTED = {
+                type: "string",
+                key: stringKey(item),
+                value: item,
+                data: item
+            };
+        }
+    } else {
+        SELECTED = null;
     }
 
-    if (id.startsWith("fn:")) {
-        selectFunctionByKey(
-            id.slice("fn:".length)
-        );
-    }
-}
-
-function shorten(value, length) {
-    const text = String(value || "");
-
-    if (text.length <= length) {
-        return text;
-    }
-
-    return text.slice(0, length - 3) + "...";
+    renderAll();
 }
 </script>
 </body>
