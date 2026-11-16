@@ -1,327 +1,501 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ELF / SO Analyzer</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ELF Hunter Analyzer</title>
 
 <style>
 :root {
-  --bg:#080c12;
-  --panel:#111821;
-  --panel2:#192330;
-  --border:#2a3948;
-  --text:#e7edf3;
-  --muted:#8b9aaa;
-  --green:#35d07f;
-  --blue:#55aaff;
-  --yellow:#e4b84a;
-  --purple:#bb86fc;
+  --bg: #080c12;
+  --panel: #111923;
+  --panel2: #182432;
+  --panel3: #0d141c;
+  --border: #2b3b4c;
+  --text: #e9f0f6;
+  --muted: #91a0b0;
+  --green: #38dc88;
+  --blue: #55adff;
+  --yellow: #e8c15d;
+  --red: #ff6262;
+  --orange: #ff9d4d;
+  --purple: #bd86ff;
+  --cyan: #60e5e5;
 }
 
-* { box-sizing:border-box }
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Tahoma, Arial, sans-serif;
+}
 
 body {
-  margin:0;
-  background:var(--bg);
-  color:var(--text);
-  font:14px Tahoma,Arial,sans-serif;
+  direction: rtl;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button,
+.file-button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+button:hover,
+button.active,
+.file-button:hover {
+  border-color: var(--green);
+  background: var(--green);
+  color: #06110a;
+}
+
+button {
+  padding: 10px 13px;
+  background: var(--panel2);
+  color: var(--text);
 }
 
 .app {
-  max-width:1800px;
-  margin:auto;
-  padding:16px;
+  width: min(1800px, 100%);
+  margin: auto;
+  padding: 12px;
 }
 
 header {
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  flex-wrap:wrap;
-  gap:14px;
-  padding:17px;
-  background:linear-gradient(120deg,#111d29,#0e171f);
-  border:1px solid var(--border);
-  border-radius:13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  flex-wrap: wrap;
+  padding: 17px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: linear-gradient(120deg, #122130, #0e171f);
 }
 
 h1 {
-  margin:0;
-  color:var(--green);
-  font-size:23px;
+  margin: 0;
+  color: var(--green);
+  font-size: 24px;
 }
 
 .subtitle {
-  color:var(--muted);
-  margin-top:7px;
-  font-size:12px;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
-.uploads,.toolbar {
-  display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  gap:8px;
+.upload-area {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.file-label,button {
-  display:inline-block;
-  padding:10px 13px;
-  border:1px solid var(--border);
-  border-radius:8px;
-  cursor:pointer;
-  font:inherit;
+.file-button {
+  display: inline-block;
+  padding: 11px 14px;
+  background: var(--green);
+  color: #06110a;
+  font-weight: bold;
 }
 
-.file-label {
-  background:var(--green);
-  color:#06100b;
-  font-weight:bold;
-}
-
-.file-label input { display:none }
-
-button {
-  color:var(--text);
-  background:var(--panel2);
-}
-
-button:hover,button.active {
-  background:var(--green);
-  color:#06100b;
+.file-button input {
+  display: none;
 }
 
 .status {
-  min-height:22px;
-  color:var(--yellow);
-  margin:10px 2px;
-  overflow-wrap:anywhere;
+  min-height: 25px;
+  margin: 10px 2px;
+  color: var(--yellow);
+  overflow-wrap: anywhere;
 }
 
 .notice {
-  padding:10px;
-  margin:10px 0;
-  border:1px solid #715d2c;
-  border-radius:8px;
-  background:#292313;
-  color:#f1d98b;
-  font-size:12px;
-  line-height:1.6;
+  margin: 10px 0;
+  padding: 11px;
+  border: 1px solid #695828;
+  border-radius: 8px;
+  background: #282313;
+  color: #f4dc8c;
+  font-size: 12px;
+  line-height: 1.7;
 }
 
-.search {
-  flex:1;
-  min-width:200px;
-  padding:11px;
-  direction:ltr;
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:8px;
-  color:var(--text);
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+#search {
+  flex: 1;
+  min-width: 210px;
+  padding: 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: none;
+  background: var(--panel);
+  color: var(--text);
+  direction: rtl;
+}
+
+#search:focus {
+  border-color: var(--green);
 }
 
 .cards {
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(125px,1fr));
-  gap:9px;
-  margin:12px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin-bottom: 11px;
 }
 
 .card {
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:9px;
-  padding:12px;
-  text-align:center;
-  min-width:0;
+  min-width: 0;
+  padding: 12px 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel);
+  text-align: center;
 }
 
 .card-label {
-  color:var(--muted);
-  font-size:12px;
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .card-value {
-  color:var(--green);
-  font-weight:bold;
-  font-size:19px;
-  margin-top:7px;
-  overflow-wrap:anywhere;
+  margin-top: 7px;
+  color: var(--green);
+  font-size: 19px;
+  font-weight: bold;
+  overflow-wrap: anywhere;
 }
 
 .layout {
-  display:grid;
-  grid-template-columns:340px minmax(320px,1fr) 380px;
-  gap:11px;
+  display: grid;
+  grid-template-columns: 330px minmax(360px, 1fr) 430px;
+  gap: 10px;
 }
 
 .panel {
-  min-width:0;
-  min-height:350px;
-  overflow:hidden;
-  background:var(--panel);
-  border:1px solid var(--border);
-  border-radius:11px;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--panel);
 }
 
 .panel-header {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:7px;
-  padding:11px;
-  background:var(--panel2);
-  border-bottom:1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel2);
 }
 
 .panel-title {
-  color:var(--blue);
-  font-weight:bold;
+  color: var(--blue);
+  font-weight: bold;
 }
 
-.panel-body { padding:12px }
+.panel-body {
+  padding: 12px;
+}
 
 .list {
-  max-height:650px;
-  overflow:auto;
+  max-height: 710px;
+  overflow: auto;
 }
 
-.item {
-  padding:10px;
-  border-bottom:1px solid #22303d;
-  cursor:pointer;
-  direction:ltr;
-  text-align:left;
-  overflow-wrap:anywhere;
+.list-item {
+  padding: 10px;
+  border-bottom: 1px solid #233240;
+  cursor: pointer;
+  direction: ltr;
+  text-align: left;
+  overflow-wrap: anywhere;
 }
 
-.item:hover,.item.selected {
-  background:#203344;
-  border-right:3px solid var(--green);
+.list-item:hover,
+.list-item.selected {
+  border-right: 3px solid var(--green);
+  background: #203548;
 }
 
-.item-main,code,.mono {
-  direction:ltr;
-  text-align:left;
-  font-family:Consolas,monospace;
-  overflow-wrap:anywhere;
+.item-name {
+  color: var(--text);
+  font-family: Consolas, monospace;
+  font-size: 12px;
 }
 
-.item-meta {
-  color:var(--muted);
-  margin-top:5px;
-  font-size:11px;
+.item-sub {
+  margin-top: 5px;
+  color: var(--muted);
+  font-family: Consolas, monospace;
+  font-size: 11px;
 }
 
 .badge {
-  display:inline-block;
-  margin:2px;
-  padding:3px 7px;
-  border-radius:99px;
-  font-size:10px;
+  display: inline-block;
+  margin: 2px;
+  padding: 3px 7px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: bold;
 }
 
-.green { background:var(--green); color:#06100b }
-.blue { background:var(--blue); color:#06100b }
-.yellow { background:var(--yellow); color:#161004 }
-.purple { background:var(--purple); color:#fff }
-
-.details { line-height:1.7 }
-.details-section { margin-bottom:15px }
-
-.details-title {
-  color:var(--yellow);
-  border-bottom:1px solid var(--border);
-  padding-bottom:5px;
-  margin-bottom:7px;
+.badge-green {
+  background: var(--green);
+  color: #06110a;
 }
 
-.kv {
-  display:grid;
-  grid-template-columns:110px 1fr;
-  gap:5px;
+.badge-blue {
+  background: var(--blue);
+  color: #06110a;
 }
 
-.kv b { color:var(--muted) }
-code { color:var(--yellow) }
+.badge-yellow {
+  background: var(--yellow);
+  color: #1d1605;
+}
 
-.offset-row {
-  display:flex;
-  justify-content:space-between;
-  gap:8px;
-  padding:7px;
-  border-bottom:1px solid #24313d;
-  direction:ltr;
+.badge-red {
+  background: var(--red);
+  color: #260606;
+}
+
+.badge-orange {
+  background: var(--orange);
+  color: #281507;
+}
+
+.badge-purple {
+  background: var(--purple);
+  color: #180b2b;
+}
+
+.badge-cyan {
+  background: var(--cyan);
+  color: #061515;
+}
+
+.empty {
+  padding: 30px 12px;
+  color: var(--muted);
+  text-align: center;
 }
 
 .graph {
-  height:570px;
-  overflow:auto;
-  background:radial-gradient(circle,#152331,#0d141c 75%);
+  min-height: 550px;
+  max-height: 710px;
+  padding: 12px;
+  overflow: auto;
+  background:
+    radial-gradient(circle at center, #182a3b 0, #0e171f 58%, #0a1016 100%);
 }
 
-svg {
-  width:100%;
-  min-width:460px;
-  height:100%;
+.graph-title {
+  margin-bottom: 10px;
+  color: var(--yellow);
+  font-weight: bold;
+  direction: ltr;
+  text-align: left;
 }
 
-.edge {
-  stroke:#647c91;
-  stroke-width:1.5;
-  opacity:.75;
+.graph-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+  direction: ltr;
 }
 
-.edge.string { stroke:var(--yellow) }
-.edge.call { stroke:var(--blue) }
-
-.node { cursor:pointer }
-.node rect { stroke-width:2 }
-
-.node text {
-  fill:var(--text);
-  font-size:11px;
-  text-anchor:middle;
-  dominant-baseline:middle;
-  pointer-events:none;
+.graph-node {
+  max-width: 260px;
+  padding: 9px;
+  border: 1px solid var(--blue);
+  border-radius: 8px;
+  background: #17354a;
+  color: var(--text);
+  font-family: Consolas, monospace;
+  font-size: 11px;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
-.node.function rect { fill:#18364a; stroke:var(--blue) }
-.node.string rect { fill:#473719; stroke:var(--yellow) }
-.node.import rect { fill:#40283e; stroke:var(--purple) }
-.node.section rect { fill:#183a2a; stroke:var(--green) }
+.graph-node.main {
+  border-color: var(--green);
+  background: #16402b;
+}
 
-.empty {
-  padding:28px 10px;
-  color:var(--muted);
-  text-align:center;
+.graph-node.caller {
+  border-color: var(--purple);
+  background: #3c2545;
+}
+
+.graph-node.callee {
+  border-color: var(--blue);
+  background: #17354a;
+}
+
+.arrow {
+  color: var(--yellow);
+  font-size: 20px;
+}
+
+.details {
+  line-height: 1.7;
+}
+
+.details-section {
+  margin-bottom: 17px;
+}
+
+.details-title {
+  margin-bottom: 7px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--border);
+  color: var(--yellow);
+  font-weight: bold;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: 125px 1fr;
+  gap: 5px;
+  direction: rtl;
+}
+
+.kv b {
+  color: var(--muted);
+}
+
+.mono,
+code,
+pre {
+  direction: ltr;
+  text-align: left;
+  font-family: Consolas, monospace;
+}
+
+code {
+  color: var(--yellow);
+  overflow-wrap: anywhere;
 }
 
 pre {
-  white-space:pre-wrap;
-  word-break:break-word;
-  direction:ltr;
-  text-align:left;
-  background:#0a1016;
-  color:#b9d4e6;
-  border:1px solid var(--border);
-  border-radius:8px;
-  padding:10px;
-  max-height:330px;
-  overflow:auto;
+  max-height: 350px;
+  margin: 0;
+  padding: 10px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #090f15;
+  color: #bed5e6;
+  font-size: 11px;
 }
 
-@media(max-width:1100px) {
-  .layout { grid-template-columns:300px 1fr }
-  .right-panel { grid-column:1/-1 }
+.detail-list {
+  max-height: 270px;
+  overflow: auto;
+  padding-right: 4px;
 }
 
-@media(max-width:700px) {
-  .app { padding:7px }
-  .layout { display:block }
-  .panel { margin-bottom:10px }
-  .graph { height:440px }
+.detail-line {
+  margin: 4px 0;
+  padding: 5px 7px;
+  border-bottom: 1px solid #233240;
+  direction: ltr;
+  text-align: left;
+  font-family: Consolas, monospace;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.progress {
+  width: 100%;
+  height: 9px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 9px;
+  background: #263442;
+}
+
+.progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--green), var(--yellow), var(--red));
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 9px;
+}
+
+.small {
+  padding: 7px 9px;
+  font-size: 11px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+@media (max-width: 1200px) {
+  .layout {
+    grid-template-columns: 310px 1fr;
+  }
+
+  .right-panel {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .app {
+    padding: 7px;
+  }
+
+  .layout {
+    display: block;
+  }
+
+  .panel {
+    margin-bottom: 10px;
+  }
+
+  .graph {
+    min-height: 430px;
+  }
+
+  .kv {
+    grid-template-columns: 100px 1fr;
+  }
 }
 </style>
 </head>
@@ -331,931 +505,910 @@ pre {
 
 <header>
   <div>
-    <h1>ELF / SO Analyzer</h1>
-    <div class="subtitle">تحليل المكتبات وعرض Strings والأوفستات والعلاقات</div>
+    <h1>ELF Hunter Analyzer</h1>
+    <div class="subtitle">
+      واجهة HTML لتصفح تقرير h.py بدون تشغيل Python داخل GitHub Pages
+    </div>
   </div>
 
-  <div class="uploads">
-    <label class="file-label">
-      فتح SO / ELF
-      <input id="elfFile" type="file" accept=".so,.elf,application/octet-stream">
+  <div class="upload-area">
+    <label class="file-button" for="jsonInput">
+      فتح تقرير JSON
+      <input id="jsonInput" type="file" accept=".json,application/json">
     </label>
 
-    <label class="file-label">
-      فتح تقرير JSON
-      <input id="jsonFile" type="file" accept=".json,application/json">
+    <label class="file-button" for="txtInput">
+      فتح تقرير TXT
+      <input id="txtInput" type="file" accept=".txt,text/plain">
     </label>
   </div>
 </header>
 
 <div class="notice">
-  ملف SO يعرض معلومات ELF الأساسية والسلاسل والرموز. افتح JSON الناتج من h.py لعرض علاقات XREF التي يحسبها المحلل.
+  استخدم زر «فتح تقرير JSON» واختر الملف الذي ينشئه h.py، مثل:
+  lib_التاريخ.json. التقرير يحتوي على protection و fix_crash و related وبقية نتائج التحليل.
 </div>
 
-<div id="status" class="status">اختر ملف SO أو تقرير JSON.</div>
+<div id="status" class="status">
+  لم يتم تحميل أي تقرير بعد.
+</div>
 
 <div class="toolbar">
-  <input id="search" class="search" placeholder="ابحث عن String أو دالة أو رمز..." autocomplete="off">
-  <button class="active" data-mode="strings">Strings</button>
-  <button data-mode="functions">Functions</button>
-  <button data-mode="imports">Imports</button>
-  <button data-mode="exports">Exports</button>
-  <button data-mode="sections">Sections</button>
-  <button id="clear">مسح التحديد</button>
+  <input id="search" type="search" placeholder="ابحث باسم الدالة أو RVA أو String أو API..." autocomplete="off">
+
+  <button class="mode-button active" data-mode="protection">الحماية</button>
+  <button class="mode-button" data-mode="crash">إصلاح الكراش</button>
+  <button class="mode-button" data-mode="related">Related</button>
+  <button class="mode-button" data-mode="all">كل الدوال</button>
+
+  <button id="clearButton">مسح التحديد</button>
 </div>
 
 <div class="cards">
-  <div class="card"><div class="card-label">الملف</div><div id="card-file" class="card-value">-</div></div>
-  <div class="card"><div class="card-label">المعمارية</div><div id="card-arch" class="card-value">-</div></div>
-  <div class="card"><div class="card-label">الدوال</div><div id="card-functions" class="card-value">0</div></div>
-  <div class="card"><div class="card-label">Strings</div><div id="card-strings" class="card-value">0</div></div>
-  <div class="card"><div class="card-label">Imports</div><div id="card-imports" class="card-value">0</div></div>
-  <div class="card"><div class="card-label">Sections</div><div id="card-sections" class="card-value">0</div></div>
+  <div class="card">
+    <div class="card-label">الملف</div>
+    <div id="cardFile" class="card-value">-</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">المعمارية</div>
+    <div id="cardArch" class="card-value">-</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">كل الدوال</div>
+    <div id="cardTotal" class="card-value">0</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">الحماية</div>
+    <div id="cardProtection" class="card-value">0</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">إصلاح الكراش</div>
+    <div id="cardCrash" class="card-value">0</div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Related</div>
+    <div id="cardRelated" class="card-value">0</div>
+  </div>
 </div>
 
 <div class="layout">
-  <section class="panel">
-    <div class="panel-header">
-      <span id="list-title" class="panel-title">Strings</span>
-      <span id="list-count" class="badge green">0</span>
-    </div>
-    <div id="list" class="list"><div class="empty">حمّل ملفًا للبدء</div></div>
-  </section>
 
-  <section class="panel">
-    <div class="panel-header">
-      <span class="panel-title">شبكة العلاقات</span>
-      <span class="badge yellow">اضغط على عقدة</span>
-    </div>
-    <div id="graph" class="graph"><div class="empty">اختر عنصرًا من القائمة</div></div>
-  </section>
+<section class="panel">
+  <div class="panel-header">
+    <span id="listTitle" class="panel-title">الحماية</span>
+    <span id="listCount" class="badge badge-green">0</span>
+  </div>
 
-  <section class="panel right-panel">
-    <div class="panel-header"><span class="panel-title">التفاصيل</span></div>
-    <div id="details" class="panel-body"><div class="empty">لا يوجد عنصر محدد</div></div>
-  </section>
+  <div id="list" class="list">
+    <div class="empty">افتح ملف JSON الناتج من h.py</div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <span class="panel-title">العلاقات</span>
+    <span class="badge badge-yellow">Callers / Callees</span>
+  </div>
+
+  <div id="graph" class="graph">
+    <div class="empty">اختر دالة من القائمة</div>
+  </div>
+</section>
+
+<section class="panel right-panel">
+  <div class="panel-header">
+    <span class="panel-title">تفاصيل الدالة</span>
+  </div>
+
+  <div id="details" class="panel-body">
+    <div class="empty">لا توجد دالة محددة</div>
+  </div>
+</section>
+
 </div>
 </div>
 
 <script>
 "use strict";
 
+const state = {
+  report: null,
+  mode: "protection",
+  selected: null,
+  visible: []
+};
+
 const $ = id => document.getElementById(id);
 
-let DATA = null;
-let ELF = null;
-let MODE = "strings";
-let SELECTED = null;
-let VISIBLE = [];
-let GRAPH_NODES = [];
+function setStatus(message, error = false) {
+  const el = $("status");
+  el.textContent = message;
+  el.style.color = error ? "var(--red)" : "var(--yellow)";
+}
 
-const SECTION_TYPES = {
-  0:"NULL",1:"PROGBITS",2:"SYMTAB",3:"STRTAB",4:"RELA",
-  5:"HASH",6:"DYNAMIC",7:"NOTE",8:"NOBITS",9:"REL",
-  11:"DYNSYM",14:"INIT_ARRAY",15:"FINI_ARRAY",19:"RELR"
-};
+function safe(value, fallback = "-") {
+  if (value === null || value === undefined || value === "") {
+    return fallback;
+  }
+  return String(value);
+}
 
-const MACHINES = {
-  3:"x86",8:"MIPS",40:"ARM",62:"x86-64",183:"AArch64",243:"RISC-V"
-};
+function numberValue(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
 
-function esc(value) {
+function escapeHtml(value) {
   return String(value ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function hex(value) {
-  if (value === null || value === undefined || value === "") return "-";
-  try {
-    return "0x" + BigInt(value).toString(16).toUpperCase();
-  } catch {
-    return "0x" + Math.trunc(Number(value) || 0).toString(16).toUpperCase();
+  const n = Number(value);
+  if (!Number.isFinite(n)) {
+    return safe(value);
   }
+  return "0x" + n.toString(16).toUpperCase().padStart(6, "0");
 }
 
-function setStatus(text) {
-  $("status").textContent = text;
+function shortText(value, max = 100) {
+  const text = safe(value, "");
+  return text.length > max ? text.slice(0, max) + "..." : text;
 }
 
-function readInt(view, offset, size, littleEndian) {
-  if (offset < 0 || offset + size > view.byteLength) {
-    throw new Error("الملف أقصر من المتوقع أو جدول ELF غير صالح.");
-  }
+function tierClass(tier) {
+  const value = String(tier || "").toLowerCase();
 
-  if (size === 1) return view.getUint8(offset);
-  if (size === 2) return view.getUint16(offset, littleEndian);
-  if (size === 4) return view.getUint32(offset, littleEndian);
-  if (size === 8) return Number(view.getBigUint64(offset, littleEndian));
+  if (value === "critical") return "badge-red";
+  if (value === "high") return "badge-orange";
+  if (value === "medium") return "badge-yellow";
+  if (value === "low") return "badge-blue";
 
-  throw new Error("حجم قيمة ELF غير مدعوم.");
+  return "badge-purple";
 }
 
-function cString(bytes, offset, maxLength = 4096) {
-  if (offset < 0 || offset >= bytes.length) return "";
-
-  let end = offset;
-  const limit = Math.min(bytes.length, offset + maxLength);
-
-  while (end < limit && bytes[end] !== 0) end++;
-
-  return new TextDecoder("utf-8")
-    .decode(bytes.subarray(offset, end));
+function tierText(item) {
+  return item.tier_ar || item.tier || "غير مصنف";
 }
 
-function parseELF(buffer) {
-  const bytes = new Uint8Array(buffer);
-  const view = new DataView(buffer);
-
-  if (
-    bytes.length < 52 ||
-    bytes[0] !== 127 ||
-    bytes[1] !== 69 ||
-    bytes[2] !== 76 ||
-    bytes[3] !== 70
-  ) {
-    throw new Error("الملف ليس ELF صالحًا.");
+function scoreOf(item) {
+  if (state.mode === "crash") {
+    return numberValue(
+      item.crash_confidence ??
+      item.confidence ??
+      item.crash_score
+    );
   }
 
-  const elfClass = bytes[4];
-  const encoding = bytes[5];
+  return numberValue(
+    item.protection_confidence ??
+    item.confidence ??
+    item.score
+  );
+}
 
-  if (![1, 2].includes(elfClass) || ![1, 2].includes(encoding)) {
-    throw new Error("صيغة ELF أو ترتيب البايتات غير مدعوم.");
+function getStats(report) {
+  return report && report.stats && typeof report.stats === "object"
+    ? report.stats
+    : {};
+}
+
+function getReportList(report, key) {
+  if (!report || !Array.isArray(report[key])) {
+    return [];
+  }
+  return report[key];
+}
+
+function normalizeReport(data) {
+  if (!data || typeof data !== "object") {
+    throw new Error("ملف JSON ليس كائنًا صالحًا.");
   }
 
-  const is64 = elfClass === 2;
-  const littleEndian = encoding === 1;
-  const machine = readInt(view, 18, 2, littleEndian);
-  const sectionOffset = readInt(view, is64 ? 40 : 32, is64 ? 8 : 4, littleEndian);
-  const sectionEntrySize = readInt(view, is64 ? 58 : 46, 2, littleEndian);
-  let sectionCount = readInt(view, is64 ? 60 : 48, 2, littleEndian);
-  let stringIndex = readInt(view, is64 ? 62 : 50, 2, littleEndian);
-  const minSectionSize = is64 ? 64 : 40;
-
-  function getRawSection(index) {
-    const off = sectionOffset + index * sectionEntrySize;
-
-    if (off < 0 || off + minSectionSize > bytes.length) return null;
-
-    if (is64) {
-      return {
-        nameIndex:readInt(view,off,4,littleEndian),
-        type:readInt(view,off+4,4,littleEndian),
-        flags:readInt(view,off+8,8,littleEndian),
-        address:readInt(view,off+16,8,littleEndian),
-        offset:readInt(view,off+24,8,littleEndian),
-        size:readInt(view,off+32,8,littleEndian),
-        link:readInt(view,off+40,4,littleEndian),
-        info:readInt(view,off+44,4,littleEndian),
-        entrySize:readInt(view,off+56,8,littleEndian)
-      };
-    }
-
-    return {
-      nameIndex:readInt(view,off,4,littleEndian),
-      type:readInt(view,off+4,4,littleEndian),
-      flags:readInt(view,off+8,4,littleEndian),
-      address:readInt(view,off+12,4,littleEndian),
-      offset:readInt(view,off+16,4,littleEndian),
-      size:readInt(view,off+20,4,littleEndian),
-      link:readInt(view,off+24,4,littleEndian),
-      info:readInt(view,off+28,4,littleEndian),
-      entrySize:readInt(view,off+36,4,littleEndian)
-    };
-  }
-
-  if (!sectionOffset || sectionEntrySize < minSectionSize || sectionOffset >= bytes.length) {
-    throw new Error("جدول الأقسام غير موجود أو غير صالح.");
-  }
-
-  if (!sectionCount) sectionCount = getRawSection(0)?.size || 0;
-  if (stringIndex === 0xffff) stringIndex = getRawSection(0)?.link || 0;
-  if (!sectionCount || sectionCount > 100000) {
-    throw new Error("عدد أقسام ELF غير صالح.");
-  }
-
-  const rawSections = [];
-
-  for (let i = 0; i < sectionCount; i++) {
-    const section = getRawSection(i);
-    if (!section) break;
-    rawSections.push(section);
-  }
-
-  const namesSection = rawSections[stringIndex];
-  const namesOffset = namesSection?.offset || 0;
-
-  const sections = rawSections.map((section, index) => ({
-    ...section,
-    index,
-    name: namesSection ? cString(bytes, namesOffset + section.nameIndex) : "",
-    typeName: SECTION_TYPES[section.type] || `TYPE_${section.type}`
-  }));
-
-  function addressToFileOffset(address) {
-    for (const section of sections) {
-      if (
-        section.address &&
-        address >= section.address &&
-        address < section.address + section.size
-      ) {
-        return section.offset + (address - section.address);
-      }
-    }
-    return null;
-  }
-
-  const symbols = [];
-  const imports = new Set();
-  const exports = new Set();
-
-  for (const section of sections) {
-    if (section.type !== 2 && section.type !== 11) continue;
-
-    const stringSection = sections[section.link];
-    if (!stringSection) continue;
-
-    const minEntrySize = is64 ? 24 : 16;
-    const entrySize = section.entrySize || minEntrySize;
-    if (entrySize < minEntrySize) continue;
-
-    const count = Math.min(Math.floor(section.size / entrySize), 1000000);
-
-    for (let i = 0; i < count; i++) {
-      const off = section.offset + i * entrySize;
-      if (off + minEntrySize > bytes.length) break;
-
-      let nameOffset, info, sectionIndex, value, size;
-
-      if (is64) {
-        nameOffset = readInt(view, off, 4, littleEndian);
-        info = bytes[off + 4];
-        sectionIndex = readInt(view, off + 6, 2, littleEndian);
-        value = readInt(view, off + 8, 8, littleEndian);
-        size = readInt(view, off + 16, 8, littleEndian);
-      } else {
-        nameOffset = readInt(view, off, 4, littleEndian);
-        value = readInt(view, off + 4, 4, littleEndian);
-        size = readInt(view, off + 8, 4, littleEndian);
-        info = bytes[off + 12];
-        sectionIndex = readInt(view, off + 14, 2, littleEndian);
-      }
-
-      const name = nameOffset
-        ? cString(bytes, stringSection.offset + nameOffset)
-        : "";
-
-      if (!name) continue;
-
-      const bind = info >> 4;
-      const symbol = {
-        name,
-        value,
-        size,
-        sectionIndex,
-        fileOffset: addressToFileOffset(value)
-      };
-
-      symbols.push(symbol);
-
-      if (sectionIndex === 0 && bind !== 0) imports.add(name);
-      else if (sectionIndex !== 0 && (bind === 1 || bind === 2)) exports.add(name);
-    }
-  }
-
-  const strings = [];
-  const seen = new Set();
-
-  for (const section of sections) {
-    if (section.type === 8 || !section.size || section.offset >= bytes.length) continue;
-
-    const end = Math.min(section.offset + section.size, bytes.length);
-    let i = section.offset;
-
-    while (i < end && strings.length < 200000) {
-      const start = i;
-
-      while (i < end && bytes[i] >= 32 && bytes[i] <= 126) i++;
-
-      if (i - start >= 4) {
-        const text = new TextDecoder("latin1")
-          .decode(bytes.subarray(start, i));
-
-        const key = `${start}|${text}`;
-
-        if (!seen.has(key)) {
-          seen.add(key);
-          strings.push({
-            text,
-            fileOffset:start,
-            rva:section.address ? section.address + (start - section.offset) : null,
-            section:section.name
-          });
-        }
-      }
-
-      i++;
-    }
-  }
-
-  return {
-    is64,
-    littleEndian,
-    machine,
-    architecture:MACHINES[machine] || `Machine ${machine}`,
-    sections,
-    symbols,
-    imports:[...imports].sort(),
-    exports:[...exports].sort(),
-    strings
+  const report = {
+    ...data
   };
+
+  report.protection = Array.isArray(data.protection)
+    ? data.protection
+    : [];
+
+  report.fix_crash = Array.isArray(data.fix_crash)
+    ? data.fix_crash
+    : (
+      Array.isArray(data.crash)
+        ? data.crash
+        : []
+    );
+
+  report.related = Array.isArray(data.related)
+    ? data.related
+    : [];
+
+  report.all_functions = Array.isArray(data.all_functions)
+    ? data.all_functions
+    : (
+      Array.isArray(data.functions)
+        ? data.functions
+        : []
+    );
+
+  return report;
 }
 
-function allFunctions() {
-  if (!DATA) return [];
+function updateCards() {
+  const report = state.report;
 
-  const arrays = [
-    DATA.protection,
-    DATA.fixcrash,
-    DATA.crash,
-    DATA.related,
-    DATA.functions
-  ];
-
-  const map = new Map();
-
-  for (const array of arrays) {
-    for (const fn of array || []) {
-      const key = String(fn.rva ?? fn.offset ?? fn.name ?? "");
-      if (key && !map.has(key)) map.set(key, fn);
-    }
+  if (!report) {
+    $("cardFile").textContent = "-";
+    $("cardArch").textContent = "-";
+    $("cardTotal").textContent = "0";
+    $("cardProtection").textContent = "0";
+    $("cardCrash").textContent = "0";
+    $("cardRelated").textContent = "0";
+    return;
   }
 
-  return [...map.values()];
+  const stats = getStats(report);
+  const pStats = stats.protection || {};
+  const cStats = stats.crash || {};
+  const rStats = stats.related || {};
+
+  $("cardFile").textContent =
+    report.file
+      ? shortText(report.file.split("/").pop(), 20)
+      : "-";
+
+  $("cardArch").textContent =
+    report.arch || report.architecture || "-";
+
+  $("cardTotal").textContent =
+    report.total ??
+    stats.total_functions ??
+    report.all_functions.length ??
+    "0";
+
+  $("cardProtection").textContent =
+    pStats.total ??
+    report.protection.length;
+
+  $("cardCrash").textContent =
+    cStats.total ??
+    report.fix_crash.length;
+
+  $("cardRelated").textContent =
+    rStats.total ??
+    report.related.length;
 }
 
-function jsonStrings() {
-  const map = new Map();
-
-  for (const fn of allFunctions()) {
-    for (const text of fn.strings_ref || []) {
-      if (!map.has(text)) {
-        map.set(text, {text,functions:[],offsets:[],imports:new Set()});
-      }
-
-      const item = map.get(text);
-      item.functions.push(fn);
-
-      const refs = [
-        ...(fn.data_refs || []),
-        ...(fn.xref_offsets || []),
-        fn.rva
-      ];
-
-      for (const ref of refs) {
-        if (ref != null && !item.offsets.some(x => String(x) === String(ref))) {
-          item.offsets.push(ref);
-        }
-      }
-
-      for (const api of fn.imports_called || []) item.imports.add(api);
-    }
+function currentItems() {
+  if (!state.report) {
+    return [];
   }
 
-  return [...map.values()].sort((a,b) => a.text.localeCompare(b.text));
-}
-
-function stringsData() {
-  return ELF ? ELF.strings : (DATA ? jsonStrings() : []);
-}
-
-function importsData() {
-  const set = new Set();
-
-  if (ELF) ELF.imports.forEach(x => set.add(x));
-
-  if (DATA) {
-    (DATA.imports || []).forEach(x => set.add(typeof x === "string" ? x : x.name));
-    allFunctions().forEach(fn => (fn.imports_called || []).forEach(x => set.add(x)));
+  if (state.mode === "crash") {
+    return state.report.fix_crash;
   }
 
-  return [...set].filter(Boolean).sort();
-}
-
-function modeData() {
-  if (MODE === "strings") return stringsData();
-  if (MODE === "functions") return allFunctions();
-  if (MODE === "imports") return ELF ? ELF.imports : importsData();
-  if (MODE === "exports") return ELF ? ELF.exports : [];
-  if (MODE === "sections") return ELF ? ELF.sections : [];
-  return [];
-}
-
-function itemKey(item) {
-  if (MODE === "strings") {
-    return `${item.text}|${item.fileOffset ?? item.offsets?.join(",") ?? ""}`;
+  if (state.mode === "related") {
+    return state.report.related;
   }
-  if (MODE === "functions") return String(item.rva ?? item.offset ?? item.name);
-  if (MODE === "sections") return String(item.index);
-  return String(item);
+
+  if (state.mode === "all") {
+    return state.report.all_functions;
+  }
+
+  return state.report.protection;
 }
 
 function itemSearchText(item) {
-  if (MODE === "strings") return item.text;
-  if (MODE === "functions") return `${item.name || ""} ${item.rva || ""}`;
-  if (MODE === "sections") return `${item.name || ""} ${item.typeName || ""}`;
-  return String(item);
+  const parts = [
+    item.name,
+    item.rva,
+    item.rva_fmt,
+    item.end,
+    item.source,
+    item.tier,
+    item.tier_ar,
+    item.primary_category,
+    item.related_to,
+    item.confidence_reasons,
+    item.protection_confidence_reasons,
+    item.crash_confidence_reasons,
+    ...(item.imports_called || []),
+    ...(item.strings_ref || []),
+    ...(item.decoded_strings || [])
+  ];
+
+  return parts
+    .filter(x => x !== null && x !== undefined)
+    .join(" ")
+    .toLowerCase();
 }
 
-function updateStats() {
-  $("card-functions").textContent = allFunctions().length;
-  $("card-strings").textContent = stringsData().length;
-  $("card-imports").textContent = importsData().length;
-  $("card-sections").textContent = ELF ? ELF.sections.length : 0;
-}
+function renderList() {
+  const list = $("list");
+  const search = $("search").value.trim().toLowerCase();
 
-function setMode(mode) {
-  MODE = mode;
-  SELECTED = null;
+  let items = currentItems();
 
-  document.querySelectorAll("[data-mode]").forEach(button => {
-    button.classList.toggle("active", button.dataset.mode === mode);
-  });
+  if (search) {
+    items = items.filter(item =>
+      itemSearchText(item).includes(search)
+    );
+  }
 
-  render();
-}
+  state.visible = items;
 
-function render() {
-  updateStats();
+  $("listCount").textContent = String(items.length);
 
-  const query = $("search").value.trim().toLowerCase();
-
-  const items = modeData().filter(item =>
-    itemSearchText(item).toLowerCase().includes(query)
-  );
-
-  VISIBLE = items;
-  $("list-title").textContent = MODE[0].toUpperCase() + MODE.slice(1);
-  $("list-count").textContent = items.length;
-
-  $("list").innerHTML = items.map((item,index) => {
-    const selected = SELECTED &&
-      SELECTED.type === MODE &&
-      SELECTED.key === itemKey(item) ? "selected" : "";
-
-    let main = "";
-    let meta = "";
-
-    if (MODE === "strings") {
-      main = item.text;
-      meta = item.section
-        ? `${item.section} | File ${hex(item.fileOffset)}`
-        : `${item.offsets?.length || 0} offsets | ${item.functions?.length || 0} functions`;
-    } else if (MODE === "functions") {
-      main = item.name || `sub_${hex(item.rva)}`;
-      meta = `RVA ${hex(item.rva)} | Confidence ${item.confidence ?? item.score ?? 0}%`;
-    } else if (MODE === "sections") {
-      main = item.name || "(unnamed)";
-      meta = `${item.typeName} | Address ${hex(item.address)} | Offset ${hex(item.offset)} | Size ${item.size}`;
-    } else {
-      main = item;
-    }
-
-    return `<div class="item ${selected}" data-index="${index}">
-      <div class="item-main">${esc(main)}</div>
-      <div class="item-meta">${esc(meta)}</div>
-    </div>`;
-  }).join("") || `<div class="empty">لا توجد نتائج</div>`;
-
-  $("list").querySelectorAll("[data-index]").forEach(element => {
-    element.addEventListener("click", () => selectItem(Number(element.dataset.index)));
-  });
-
-  renderSelection();
-}
-
-function selectItem(index) {
-  const item = VISIBLE[index];
-  if (item === undefined) return;
-
-  SELECTED = {
-    type:MODE,
-    key:itemKey(item),
-    value:item,
-    data:item
+  const titleMap = {
+    protection: "الحماية",
+    crash: "إصلاح الكراش",
+    related: "Related / Wrappers",
+    all: "كل الدوال"
   };
 
-  render();
-}
+  $("listTitle").textContent = titleMap[state.mode];
 
-function clearSelection() {
-  SELECTED = null;
-  render();
-}
-
-function renderSelection() {
-  if (!SELECTED) {
-    $("details").innerHTML = `<div class="empty">لا يوجد عنصر محدد</div>`;
-    $("graph").innerHTML = `<div class="empty">اختر عنصرًا من القائمة</div>`;
+  if (!items.length) {
+    list.innerHTML = `
+      <div class="empty">
+        لا توجد نتائج مطابقة.
+      </div>
+    `;
     return;
   }
 
-  if (MODE === "strings") renderStringDetails(SELECTED.data);
-  else if (MODE === "functions") renderFunctionDetails(SELECTED.data);
-  else if (MODE === "sections") renderSectionDetails(SELECTED.data);
-  else renderSymbolDetails(SELECTED.value, MODE);
-}
+  list.innerHTML = items.map((item, index) => {
+    const selected =
+      state.selected &&
+      sameItem(state.selected, item)
+        ? "selected"
+        : "";
 
-function renderStringDetails(item) {
-  if (ELF) {
-    $("details").innerHTML = `<div class="details">
-      <div class="details-section">
-        <div class="details-title">String</div>
-        <pre>${esc(item.text)}</pre>
-      </div>
-      <div class="details-section">
-        <div class="details-title">معلومات الموقع</div>
-        <div class="kv">
-          <b>File Offset</b><code>${hex(item.fileOffset)}</code>
-          <b>RVA</b><code>${hex(item.rva)}</code>
-          <b>Section</b><code>${esc(item.section || "-")}</code>
+    const score = scoreOf(item);
+    const confidence = numberValue(
+      item.confidence ??
+      item.protection_confidence ??
+      item.crash_confidence ??
+      score
+    );
+
+    const category =
+      item.primary_category ||
+      Object.keys(item.signal_categories || {})[0] ||
+      "other";
+
+    return `
+      <div class="list-item ${selected}" data-index="${index}">
+        <div class="item-name">
+          ${escapeHtml(item.name || ("sub_" + hex(item.rva)))}
+        </div>
+
+        <div class="item-sub">
+          RVA: ${escapeHtml(item.rva_fmt || hex(item.rva))}
+          |
+          Offset: ${escapeHtml(hex(item.file_offset || item.offset || 0))}
+        </div>
+
+        <div>
+          <span class="badge ${tierClass(item.tier)}">
+            ${escapeHtml(tierText(item))}
+          </span>
+
+          <span class="badge badge-green">
+            ثقة ${confidence}%
+          </span>
+
+          <span class="badge badge-blue">
+            ${escapeHtml(category)}
+          </span>
+        </div>
+
+        <div class="item-sub">
+          score=${escapeHtml(item.score ?? "-")}
+          |
+          crash=${escapeHtml(item.crash_score ?? "-")}
+          |
+          instructions=${escapeHtml(item.n_insns ?? "-")}
         </div>
       </div>
-      <div class="subtitle">
-        تحليل SO المباشر يعرض موضع السلسلة. افتح تقرير JSON من h.py لعرض XREF التفصيلي.
-      </div>
-    </div>`;
+    `;
+  }).join("");
 
-    drawNodes(
-      [
-        {id:"string",type:"string",label:item.text,meta:item},
-        {id:"offset",type:"section",label:"File "+hex(item.fileOffset),meta:item}
-      ],
-      [{from:"string",to:"offset",type:"string"}]
-    );
+  list.querySelectorAll(".list-item").forEach(element => {
+    element.addEventListener("click", () => {
+      const index = Number(element.dataset.index);
+      selectItem(state.visible[index]);
+    });
+  });
+}
+
+function sameItem(a, b) {
+  if (!a || !b) {
+    return false;
+  }
+
+  return Number(a.rva) === Number(b.rva) &&
+    String(a.name || "") === String(b.name || "");
+}
+
+function selectItem(item) {
+  state.selected = item || null;
+  renderList();
+  renderGraph();
+  renderDetails();
+}
+
+function renderGraph() {
+  const graph = $("graph");
+  const item = state.selected;
+
+  if (!item) {
+    graph.innerHTML = `
+      <div class="empty">
+        اختر دالة من القائمة لعرض العلاقات.
+      </div>
+    `;
     return;
   }
 
-  const offsets = (item.offsets || []).map(offset =>
-    `<div class="offset-row"><span>RVA / Ref</span><code>${hex(offset)}</code></div>`
-  ).join("");
+  const callers = Array.isArray(item.callers)
+    ? item.callers
+    : (
+      Array.isArray(item.callers_rva)
+        ? item.callers_rva
+        : []
+    );
 
-  const functions = (item.functions || []).map((fn,index) =>
-    `<div class="item" data-related-function="${index}">
-      <div class="item-main">${esc(fn.name || "sub_" + hex(fn.rva))}</div>
-      <div class="item-meta">RVA ${hex(fn.rva)} | Offset ${hex(fn.offset)} | Confidence ${fn.confidence ?? fn.score ?? 0}%</div>
-    </div>`
-  ).join("");
+  const callees = Array.isArray(item.callees)
+    ? item.callees
+    : (
+      Array.isArray(item.local_calls)
+        ? item.local_calls
+        : []
+    );
 
-  const apis = [...(item.imports || [])]
-    .map(api => `<span class="badge purple">${esc(api)}</span>`)
+  const callerHtml = callers.slice(0, 20).map(value => `
+    <div class="graph-node caller">
+      ${escapeHtml(typeof value === "number" ? hex(value) : value)}
+    </div>
+  `).join("");
+
+  const calleeHtml = callees.slice(0, 20).map(value => `
+    <div class="graph-node callee">
+      ${escapeHtml(typeof value === "number" ? hex(value) : value)}
+    </div>
+  `).join("");
+
+  graph.innerHTML = `
+    <div class="graph-title">
+      ${escapeHtml(item.name || hex(item.rva))}
+    </div>
+
+    <div class="graph-row">
+      ${callerHtml || '<div class="empty">لا توجد Callers في التقرير</div>'}
+    </div>
+
+    <div class="graph-row">
+      ${callers.length ? '<div class="arrow">↓</div>' : ""}
+      <div class="graph-node main">
+        ${escapeHtml(item.name || hex(item.rva))}
+        <br>
+        ${escapeHtml(item.rva_fmt || hex(item.rva))}
+      </div>
+    </div>
+
+    <div class="graph-row">
+      ${callees.length ? '<div class="arrow">↓</div>' : ""}
+      ${calleeHtml || '<div class="empty">لا توجد Callees في التقرير</div>'}
+    </div>
+  `;
+}
+
+function renderBadges(values, className = "badge-blue") {
+  if (!Array.isArray(values) || !values.length) {
+    return `<span class="badge badge-purple">لا يوجد</span>`;
+  }
+
+  return values.map(value => `
+    <span class="badge ${className}">
+      ${escapeHtml(value)}
+    </span>
+  `).join("");
+}
+
+function renderEvidence(item) {
+  const evidence = Array.isArray(item.evidence)
+    ? item.evidence
+    : [];
+
+  if (!evidence.length) {
+    return `<div class="empty">لا توجد أدلة محفوظة في JSON.</div>`;
+  }
+
+  return `
+    <div class="detail-list">
+      ${evidence.slice(0, 80).map(entry => `
+        <div class="detail-line">
+          [+${escapeHtml(entry.weight ?? 0)}]
+          ${escapeHtml(entry.category || "")}
+          |
+          ${escapeHtml(entry.type || "")}
+          |
+          ${escapeHtml(entry.value || "")}
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderCategoryScores(item) {
+  const scores = item.category_scores;
+
+  if (!scores || typeof scores !== "object") {
+    return `<div class="empty">لا توجد category_scores.</div>`;
+  }
+
+  const rows = Object.entries(scores)
+    .sort((a, b) => Number(b[1]) - Number(a[1]))
+    .map(([key, value]) => `
+      <div class="detail-line">
+        ${escapeHtml(key)} = ${escapeHtml(value)}
+      </div>
+    `)
     .join("");
 
-  $("details").innerHTML = `<div class="details">
-    <div class="details-section"><div class="details-title">String</div><pre>${esc(item.text)}</pre></div>
-    <div class="details-section"><div class="details-title">الأوفستات المرتبطة (${item.offsets?.length || 0})</div>${offsets || "لا توجد أوفستات بالتقرير"}</div>
-    <div class="details-section"><div class="details-title">الدوال المرتبطة (${item.functions?.length || 0})</div>${functions || "لا توجد دوال مرتبطة"}</div>
-    <div class="details-section"><div class="details-title">Imports</div>${apis || "-"}</div>
-  </div>`;
+  return `<div class="detail-list">${rows || "لا توجد بيانات"}</div>`;
+}
 
-  $("details").querySelectorAll("[data-related-function]").forEach(element => {
-    element.addEventListener("click", () => {
-      const fn = item.functions[Number(element.dataset.relatedFunction)];
-      if (fn) {
-        MODE = "functions";
-        SELECTED = {type:"functions",key:String(fn.rva ?? fn.name),value:fn,data:fn};
-        renderFunctionDetails(fn);
-      }
-    });
+function renderDetails() {
+  const details = $("details");
+  const item = state.selected;
+
+  if (!item) {
+    details.innerHTML = `
+      <div class="empty">
+        لا توجد دالة محددة.
+      </div>
+    `;
+    return;
+  }
+
+  const confidence = scoreOf(item);
+  const imports = item.imports_called || [];
+  const strings = item.strings_ref || [];
+  const decoded = item.decoded_strings || [];
+  const conditions = item.conditions || [];
+  const constants = item.constants || [];
+  const localCalls = item.local_calls || [];
+  const syscalls = item.syscalls || [];
+  const detectors = item.detectors || {};
+
+  const activeDetectors = Object.entries(detectors)
+    .filter(([, value]) => value)
+    .map(([key]) => key);
+
+  details.innerHTML = `
+    <div class="details">
+
+      <div class="details-section">
+        <div class="details-title">المعلومات الأساسية</div>
+
+        <div class="kv">
+          <b>الاسم</b>
+          <code>${escapeHtml(item.name || "-")}</code>
+
+          <b>RVA</b>
+          <code>${escapeHtml(item.rva_fmt || hex(item.rva))}</code>
+
+          <b>Offset</b>
+          <code>${escapeHtml(hex(item.file_offset || item.offset || 0))}</code>
+
+          <b>النهاية</b>
+          <code>${escapeHtml(hex(item.end || 0))}</code>
+
+          <b>الحجم</b>
+          <span>${escapeHtml(item.size ?? "-")} بايت</span>
+
+          <b>المصدر</b>
+          <span>${escapeHtml(item.source || "-")}</span>
+
+          <b>التصنيف</b>
+          <span>${escapeHtml(item.primary_category || "-")}</span>
+
+          <b>Tier</b>
+          <span class="badge ${tierClass(item.tier)}">
+            ${escapeHtml(tierText(item))}
+          </span>
+        </div>
+      </div>
+
+      <div class="details-section">
+        <div class="details-title">الدرجات</div>
+
+        <div class="kv">
+          <b>الثقة الحالية</b>
+          <span>${confidence}%</span>
+
+          <b>Protection score</b>
+          <span>${escapeHtml(item.score ?? "-")}</span>
+
+          <b>Crash score</b>
+          <span>${escapeHtml(item.crash_score ?? "-")}</span>
+
+          <b>Protection confidence</b>
+          <span>${escapeHtml(item.protection_confidence ?? "-")}</span>
+
+          <b>Crash confidence</b>
+          <span>${escapeHtml(item.crash_confidence ?? "-")}</span>
+
+          <b>Signal raw</b>
+          <span>${escapeHtml(item.signal_raw ?? "-")}</span>
+
+          <b>Context raw</b>
+          <span>${escapeHtml(item.context_raw ?? "-")}</span>
+
+          <b>التعليمات</b>
+          <span>${escapeHtml(item.n_insns ?? "-")}</span>
+
+          <b>Callers</b>
+          <span>${escapeHtml(item.n_callers ?? "-")}</span>
+
+          <b>Callees</b>
+          <span>${escapeHtml(item.n_callees ?? "-")}</span>
+        </div>
+
+        <div class="progress">
+          <span style="width:${Math.max(0, Math.min(100, confidence))}%"></span>
+        </div>
+      </div>
+
+      <div class="details-section">
+        <div class="details-title">سبب الثقة</div>
+        <pre>${escapeHtml(
+          item.confidence_reasons ||
+          item.protection_confidence_reasons ||
+          item.crash_confidence_reasons ||
+          "لا يوجد"
+        )}</pre>
+      </div>
+
+      <div class="details-section">
+        <div class="details-title">
+          Detectors (${activeDetectors.length})
+        </div>
+        ${renderBadges(activeDetectors, "badge-orange")}
+      </div>
+
+      <div class="details-section">
+        <div class="details-title">
+          APIs / Imports (${imports.length})
+        </div>
+        ${renderBadges(imports, "badge-blue")}
+      </div>
+
+      <div class="details-section">
+        <div class="details-title">
+          Strings (${strings.length})
+        </div>
+        ${renderBadges(strings, "badge-yellow")}
+      </div>
+
+      <div class="details-section">
+        <div class="details-title">
+          Decoded Strings (${decoded.length})
+        </div>
+        ${renderBadges(decoded, "badge-purple")}
+      </div>
+
+      <div class="details-section">
+        <div class="details-title">
+          Conditions (${conditions.length})
+        </div>
+        ${conditions.length
+          ? `<pre>${escapeHtml(JSON.stringify(conditions, null, 2))}</pre>`
+          : '<div class="empty">لا توجد شروط محفوظة.</div>'}
+      </div>
+
+      <div class="details-section">
+        <div class="details-title">
+          Constants (${constants.length})
+        </div>
+        ${constants.length
+          ? `<pre>${escapeHtml(JSON.stringify(constants, null, 2))}</pre>`
+          : '<div class="empty">لا توجد ثوابت محفوظة.</div>'}
+      </div>
+
+      <div class="details-section">
+        <div class="details-title">
+          Syscalls (${syscalls.length})
+        </div>
+        ${syscalls.length
+          ? `<pre>${escapeHtml(JSON.stringify(syscalls, null, 2))}</pre>`
+          : '<div class="empty">لا توجد Syscalls محفوظة.</div>'}
+      </div>
+
+      <div class="details-section">
+        <div class="details-title">
+          Local Calls (${localCalls.length})
+        </div>
+        ${renderBadges(
+          localCalls.map(value =>
+            typeof value === "number" ? hex(value) : value
+          ),
+          "badge-cyan"
+        )}
+      </div>
+
+      <div class="details-section">
+        <div class="details-title">Evidence</div>
+        ${renderEvidence(item)}
+      </div>
+
+      <div class="details-section">
+        <div class="details-title">Category Scores</div>
+        ${renderCategoryScores(item)}
+      </div>
+
+      <div class="details-section">
+        <div class="details-title">JSON الخاص بالدالة</div>
+        <pre>${escapeHtml(JSON.stringify(item, null, 2))}</pre>
+      </div>
+
+    </div>
+  `;
+}
+
+function renderAll() {
+  updateCards();
+  renderList();
+  renderGraph();
+  renderDetails();
+}
+
+function loadReport(data, filename) {
+  state.report = normalizeReport(data);
+  state.selected = null;
+  state.mode = "protection";
+
+  document.querySelectorAll(".mode-button").forEach(button => {
+    button.classList.toggle(
+      "active",
+      button.dataset.mode === state.mode
+    );
   });
 
-  drawFunctionNetwork(item.functions || []);
+  setStatus(
+    `تم فتح التقرير بنجاح: ${filename} | ` +
+    `Protection=${state.report.protection.length} | ` +
+    `Crash=${state.report.fix_crash.length} | ` +
+    `Related=${state.report.related.length}`
+  );
+
+  renderAll();
 }
 
-function renderFunctionDetails(fn) {
-  const refs = [...new Set([
-    ...(fn.data_refs || []),
-    ...(fn.xref_offsets || [])
-  ].map(String))];
+async function handleJsonFile(event) {
+  event.preventDefault();
+  event.stopPropagation();
 
-  $("details").innerHTML = `<div class="details">
-    <div class="details-title">معلومات الدالة</div>
-    <div class="kv">
-      <b>Name</b><code>${esc(fn.name || "-")}</code>
-      <b>RVA</b><code>${hex(fn.rva)}</code>
-      <b>Offset</b><code>${hex(fn.offset)}</code>
-      <b>Size</b><span>${fn.size ?? "-"} bytes</span>
-      <b>Confidence</b><span>${fn.confidence ?? fn.score ?? 0}%</span>
-      <b>Callers</b><span>${fn.n_callers ?? 0}</span>
-      <b>Callees</b><span>${fn.n_callees ?? 0}</span>
-    </div>
-
-    <div class="details-section">
-      <div class="details-title">Strings</div>
-      ${(fn.strings_ref || []).map(text =>
-        `<div class="offset-row"><span>String</span><code>${esc(text)}</code></div>`
-      ).join("") || "-"}
-    </div>
-
-    <div class="details-section">
-      <div class="details-title">Data References</div>
-      ${refs.map(ref =>
-        `<div class="offset-row"><span>Reference</span><code>${hex(ref)}</code></div>`
-      ).join("") || "-"}
-    </div>
-
-    <div class="details-section">
-      <div class="details-title">Local Calls</div>
-      ${(fn.local_calls || []).map(rva =>
-        `<div class="offset-row"><span>Call RVA</span><code>${hex(rva)}</code></div>`
-      ).join("") || "-"}
-    </div>
-
-    <div class="details-section">
-      <div class="details-title">Imports</div>
-      ${(fn.imports_called || []).map(api =>
-        `<span class="badge purple">${esc(api)}</span>`
-      ).join("") || "-"}
-    </div>
-
-    <div class="details-section">
-      <div class="details-title">Disassembly</div>
-      <pre>${esc(formatDisasm(fn.disasm || []))}</pre>
-    </div>
-  </div>`;
-
-  drawFunctionNetwork([fn]);
-}
-
-function formatDisasm(items) {
-  return items.slice(0,500).map(ins => {
-    const pc = hex(ins.pc);
-    const raw = ins.hex || "";
-    const mnemonic = ins.mnemonic || "";
-    const operands = ins.operands || "";
-    return `${pc.padEnd(14)} ${raw.padEnd(12)} ${mnemonic.padEnd(10)} ${operands}`;
-  }).join("
-");
-}
-
-function renderSectionDetails(section) {
-  $("details").innerHTML = `<div class="details">
-    <div class="details-title">Section</div>
-    <div class="kv">
-      <b>Name</b><code>${esc(section.name || "(unnamed)")}</code>
-      <b>Type</b><code>${esc(section.typeName)}</code>
-      <b>Address</b><code>${hex(section.address)}</code>
-      <b>File Offset</b><code>${hex(section.offset)}</code>
-      <b>Size</b><span>${section.size} bytes</span>
-    </div>
-  </div>`;
-
-  drawNodes([{id:"section",type:"section",label:section.name || section.typeName,meta:section}],[]);
-}
-
-function renderSymbolDetails(name,type) {
-  const symbols = ELF ? ELF.symbols.filter(symbol => symbol.name === name) : [];
-
-  $("details").innerHTML = `<div class="details">
-    <div class="details-title">${esc(type)}: ${esc(name)}</div>
-    ${symbols.map(symbol => `<div class="kv">
-      <b>Value</b><code>${hex(symbol.value)}</code>
-      <b>File Offset</b><code>${hex(symbol.fileOffset)}</code>
-      <b>Size</b><span>${symbol.size}</span>
-      <b>Section Index</b><span>${symbol.sectionIndex}</span>
-    </div>`).join("") || "لا توجد تفاصيل رمز إضافية"}
-  </div>`;
-
-  drawNodes([{id:"symbol",type:"import",label:name,meta:name}],[]);
-}
-
-function drawFunctionNetwork(functions) {
-  const nodes = [];
-  const edges = [];
-  const ids = new Set();
-
-  function add(node) {
-    if (ids.has(node.id)) return;
-    ids.add(node.id);
-    nodes.push(node);
-  }
-
-  const knownFunctions = allFunctions();
-
-  for (const fn of functions) {
-    const id = "fn:" + String(fn.rva ?? fn.name);
-
-    add({
-      id,
-      type:"function",
-      label:fn.name || "sub_" + hex(fn.rva),
-      meta:fn
-    });
-
-    for (const text of fn.strings_ref || []) {
-      const stringId = "str:" + text;
-      add({id:stringId,type:"string",label:text,meta:text});
-      edges.push({from:id,to:stringId,type:"string"});
-    }
-
-    for (const api of fn.imports_called || []) {
-      const apiId = "api:" + api;
-      add({id:apiId,type:"import",label:api,meta:api});
-      edges.push({from:id,to:apiId,type:"call"});
-    }
-
-    for (const rva of fn.local_calls || []) {
-      const target = knownFunctions.find(item => Number(item.rva) === Number(rva));
-      const targetId = "fn:" + String(target ? (target.rva ?? target.name) : rva);
-
-      add({
-        id:targetId,
-        type:"function",
-        label:target?.name || "sub_" + hex(rva),
-        meta:target || {rva}
-      });
-
-      edges.push({from:id,to:targetId,type:"call"});
-    }
-  }
-
-  drawNodes(nodes,edges);
-}
-
-function drawNodes(nodes,edges) {
-  GRAPH_NODES = nodes;
-  const box = $("graph");
-
-  if (!nodes.length) {
-    box.innerHTML = `<div class="empty">لا توجد بيانات للرسم</div>`;
-    return;
-  }
-
-  const width = Math.max(box.clientWidth,460);
-  const height = Math.max(box.clientHeight,380);
-  const cx = width/2;
-  const cy = height/2;
-  const radius = Math.min(width,height)*0.34;
-  const positions = new Map();
-
-  nodes.forEach((node,index) => {
-    const angle = nodes.length === 1 ? 0 : (2*Math.PI*index)/nodes.length;
-    positions.set(node.id,{
-      x:cx+Math.cos(angle)*radius,
-      y:cy+Math.sin(angle)*radius
-    });
-  });
-
-  const lines = edges.map(edge => {
-    const from = positions.get(edge.from);
-    const to = positions.get(edge.to);
-
-    if (!from || !to) return "";
-
-    return `<line class="edge ${edge.type || ""}"
-      x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"/>`;
-  }).join("");
-
-  const shapes = nodes.map(node => {
-    const pos = positions.get(node.id);
-    const widthNode = 155;
-    const heightNode = 48;
-    const label = String(node.label || "");
-    const shortLabel = label.length > 22 ? label.slice(0,19) + "..." : label;
-
-    return `<g class="node ${node.type}" data-node-id="${esc(node.id)}"
-      transform="translate(${pos.x-widthNode/2},${pos.y-heightNode/2})">
-      <rect width="${widthNode}" height="${heightNode}" rx="8"></rect>
-      <text x="${widthNode/2}" y="18">${esc(shortLabel)}</text>
-      <text x="${widthNode/2}" y="36" style="font-size:9px;fill:#9fb0bf">${esc(node.type)}</text>
-    </g>`;
-  }).join("");
-
-  box.innerHTML = `<svg viewBox="0 0 ${width} ${height}">${lines}${shapes}</svg>`;
-
-  box.querySelectorAll("[data-node-id]").forEach(element => {
-    element.addEventListener("click",() => selectGraphNode(element.dataset.nodeId));
-  });
-}
-
-function selectGraphNode(id) {
-  const node = GRAPH_NODES.find(item => item.id === id);
-  if (!node) return;
-
-  if (node.type === "function" && node.meta?.rva !== undefined) {
-    MODE = "functions";
-    SELECTED = {
-      type:"functions",
-      key:String(node.meta.rva),
-      value:node.meta,
-      data:node.meta
-    };
-    renderFunctionDetails(node.meta);
-    return;
-  }
-
-  if (node.type === "string" && node.meta?.text) {
-    renderStringDetails(node.meta);
-    return;
-  }
-
-  if (node.type === "string") {
-    const item = jsonStrings().find(entry => entry.text === node.meta);
-    if (item) renderStringDetails(item);
-    return;
-  }
-
-  $("details").innerHTML = `<div class="details">
-    <div class="details-title">${esc(node.type)}</div>
-    <pre>${esc(node.label)}</pre>
-  </div>`;
-}
-
-$("elfFile").addEventListener("change", async event => {
   const file = event.target.files && event.target.files[0];
-  if (!file) return;
 
-  setStatus(`تم اختيار ${file.name} (${file.size} bytes). جاري التحليل...`);
+  if (!file) {
+    return;
+  }
 
   try {
-    const buffer = await file.arrayBuffer();
-    const parsed = parseELF(buffer);
+    setStatus(`جاري قراءة ${file.name}...`);
 
-    ELF = parsed;
-    DATA = null;
-    SELECTED = null;
-    MODE = "strings";
+    const text = await file.text();
 
-    $("card-file").textContent = file.name;
-    $("card-arch").textContent = parsed.architecture;
+    if (!text.trim()) {
+      throw new Error("ملف JSON فارغ.");
+    }
+
+    const data = JSON.parse(text);
+
+    loadReport(data, file.name);
+  } catch (error) {
+    console.error(error);
 
     setStatus(
-      `نجح التحليل: ${file.name} — ${parsed.is64 ? "ELF64" : "ELF32"} — ` +
-      `${parsed.sections.length} أقسام — ${parsed.strings.length} Strings`
+      "فشل فتح JSON: " + (error.message || error),
+      true
     );
 
-    render();
-  } catch (error) {
-    console.error("ELF analysis error:",error);
-    ELF = null;
-    DATA = null;
-    SELECTED = null;
+    alert(
+      "فشل فتح ملف JSON.
 
-    const message = error && error.message
-      ? error.message
-      : String(error);
-
-    setStatus(`تعذر تحليل الملف: ${message}`);
-    alert(`تعذر تحليل الملف:
-${message}`);
-    render();
+" +
+      (error.message || error)
+    );
   }
-});
 
-$("jsonFile").addEventListener("change", async event => {
+  event.target.value = "";
+}
+
+async function handleTxtFile(event) {
+  event.preventDefault();
+  event.stopPropagation();
+
   const file = event.target.files && event.target.files[0];
-  if (!file) return;
 
-  setStatus(`تم اختيار ${file.name}. جاري تحميل JSON...`);
+  if (!file) {
+    return;
+  }
 
   try {
-    const parsed = JSON.parse(await file.text());
+    const text = await file.text();
 
-    DATA = parsed;
-    ELF = null;
-    SELECTED = null;
-    MODE = "strings";
+    $("details").innerHTML = `
+      <div class="details">
+        <div class="details-section">
+          <div class="details-title">
+            محتوى ${escapeHtml(file.name)}
+          </div>
+          <pre>${escapeHtml(text)}</pre>
+        </div>
+      </div>
+    `;
 
-    $("card-file").textContent = file.name;
-    $("card-arch").textContent = parsed.arch || parsed.architecture || "-";
-
-    setStatus(`تم تحميل التقرير: ${file.name}`);
-    render();
+    setStatus(`تم فتح التقرير النصي: ${file.name}`);
   } catch (error) {
-    console.error("JSON loading error:",error);
-
-    const message = error && error.message
-      ? error.message
-      : String(error);
-
-    setStatus(`تعذر فتح JSON: ${message}`);
-    alert(`تعذر فتح JSON:
-${message}`);
+    setStatus(
+      "فشل فتح TXT: " + (error.message || error),
+      true
+    );
   }
+
+  event.target.value = "";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  $("jsonInput").addEventListener("change", handleJsonFile);
+  $("txtInput").addEventListener("change", handleTxtFile);
+
+  $("search").addEventListener("input", () => {
+    renderList();
+  });
+
+  document.querySelectorAll(".mode-button").forEach(button => {
+    button.addEventListener("click", () => {
+      state.mode = button.dataset.mode;
+      state.selected = null;
+
+      document.querySelectorAll(".mode-button").forEach(other => {
+        other.classList.toggle(
+          "active",
+          other === button
+        );
+      });
+
+      renderAll();
+    });
+  });
+
+  $("clearButton").addEventListener("click", () => {
+    state.selected = null;
+    renderAll();
+  });
+
+  document.addEventListener("submit", event => {
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
 });
-
-$("search").addEventListener("input",render);
-$("clear").addEventListener("click",clearSelection);
-
-document.querySelectorAll("[data-mode]").forEach(button => {
-  button.addEventListener("click",() => setMode(button.dataset.mode));
-});
-
-render();
 </script>
 </body>
 </html>
