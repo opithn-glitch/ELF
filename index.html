@@ -2,21 +2,22 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ELF Analyzer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ELF String XREF Analyzer</title>
 
 <style>
 :root {
-    --bg: #0d1117;
-    --panel: #161b22;
-    --panel2: #21262d;
-    --border: #30363d;
-    --text: #e6edf3;
-    --muted: #8b949e;
-    --green: #3fb950;
-    --yellow: #d29922;
-    --red: #f85149;
-    --blue: #58a6ff;
+    --bg: #080c12;
+    --panel: #111821;
+    --panel2: #192330;
+    --border: #2a3948;
+    --text: #e7edf3;
+    --muted: #8b9aaa;
+    --green: #35d07f;
+    --blue: #55aaff;
+    --yellow: #e4b84a;
+    --red: #ff6170;
+    --purple: #bb86fc;
 }
 
 * {
@@ -25,363 +26,547 @@
 
 body {
     margin: 0;
-    padding: 25px;
     background: var(--bg);
     color: var(--text);
-    font-family: Arial, Tahoma, sans-serif;
+    font-family: Tahoma, Arial, sans-serif;
 }
 
-.container {
-    max-width: 1500px;
+.app {
+    max-width: 1800px;
     margin: auto;
+    padding: 20px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding: 20px;
+    background: linear-gradient(
+        120deg,
+        #111d29,
+        #0e171f
+    );
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 16px;
 }
 
 h1 {
+    margin: 0;
     color: var(--green);
-    margin-bottom: 5px;
+    font-size: 25px;
 }
 
 .subtitle {
     color: var(--muted);
-    margin-bottom: 25px;
+    margin-top: 8px;
+    font-size: 13px;
 }
 
-.upload-box {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 20px;
+input,
+select,
+button {
+    font: inherit;
 }
 
 input[type="file"] {
-    width: 100%;
-    padding: 12px;
+    color: var(--text);
     background: var(--panel2);
-    color: white;
+    padding: 10px;
     border: 1px solid var(--border);
-    border-radius: 7px;
+    border-radius: 8px;
+    max-width: 370px;
 }
 
 button {
-    background: var(--green);
-    color: #07100c;
-    border: 0;
-    border-radius: 7px;
-    padding: 11px 20px;
-    margin-top: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel2);
+    color: var(--text);
+    padding: 10px 16px;
     cursor: pointer;
-    font-weight: bold;
 }
 
-button:hover {
-    opacity: 0.85;
+button:hover,
+button.active {
+    background: var(--green);
+    color: #06100b;
 }
 
-.status {
-    margin-top: 15px;
-    color: var(--yellow);
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin: 15px 0;
+}
+
+.search {
+    flex: 1;
+    min-width: 250px;
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    direction: ltr;
 }
 
 .cards {
     display: grid;
     grid-template-columns: repeat(
         auto-fit,
-        minmax(160px, 1fr)
+        minmax(150px, 1fr)
     );
     gap: 12px;
-    margin: 20px 0;
+    margin-bottom: 16px;
 }
 
 .card {
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 9px;
-    padding: 17px;
+    border-radius: 10px;
+    padding: 16px;
     text-align: center;
 }
 
-.card-title {
+.card-label {
     color: var(--muted);
-    font-size: 14px;
+    font-size: 13px;
 }
 
 .card-value {
     color: var(--green);
-    font-size: 23px;
-    font-weight: bold;
+    font-size: 24px;
     margin-top: 8px;
+    font-weight: bold;
 }
 
-.tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 25px 0 12px;
+.layout {
+    display: grid;
+    grid-template-columns: 390px minmax(500px, 1fr) 430px;
+    gap: 14px;
 }
 
-.tab {
-    background: var(--panel2);
-    color: var(--text);
-    border: 1px solid var(--border);
-    margin: 0;
-}
-
-.tab.active {
-    background: var(--green);
-    color: #07100c;
-}
-
-.search {
-    width: 100%;
-    padding: 13px;
+.panel {
     background: var(--panel);
-    color: white;
     border: 1px solid var(--border);
-    border-radius: 7px;
-    margin-bottom: 15px;
+    border-radius: 12px;
+    overflow: hidden;
+    min-height: 400px;
 }
 
-.table-wrap {
-    overflow-x: auto;
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel2);
+}
+
+.panel-title {
+    color: var(--blue);
+    font-weight: bold;
+}
+
+.panel-body {
+    padding: 12px;
+}
+
+.list {
+    max-height: 700px;
+    overflow-y: auto;
+}
+
+.item {
+    padding: 11px;
+    border-bottom: 1px solid #22303d;
+    cursor: pointer;
+    direction: ltr;
+    text-align: left;
+}
+
+.item:hover,
+.item.selected {
+    background: #203344;
+    border-right: 3px solid var(--green);
+}
+
+.item-main {
+    color: var(--text);
+    font-family: monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-meta {
+    color: var(--muted);
+    margin-top: 6px;
+    font-size: 12px;
+}
+
+.badge {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 3px 8px;
+    margin: 2px;
+    font-size: 11px;
+}
+
+.badge-green {
+    color: #06100b;
+    background: var(--green);
+}
+
+.badge-blue {
+    color: #06100b;
+    background: var(--blue);
+}
+
+.badge-yellow {
+    color: #161004;
+    background: var(--yellow);
+}
+
+.badge-red {
+    color: white;
+    background: var(--red);
+}
+
+.badge-purple {
+    color: white;
+    background: var(--purple);
+}
+
+.details {
+    line-height: 1.8;
+}
+
+.details-section {
+    margin-bottom: 18px;
+}
+
+.details-title {
+    color: var(--yellow);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+}
+
+.kv {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 6px;
+    direction: rtl;
+}
+
+.kv b {
+    color: var(--muted);
+}
+
+code,
+.mono {
+    direction: ltr;
+    text-align: left;
+    font-family: Consolas, monospace;
+    color: var(--yellow);
+    word-break: break-all;
+}
+
+.offset-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px;
+    border-bottom: 1px solid #24313d;
+    direction: ltr;
+}
+
+.offset-row:hover {
+    background: #1d2b37;
+}
+
+.graph-wrap {
+    height: 700px;
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(
+            circle at 50% 50%,
+            #152331,
+            #0d141c 70%
+        );
+}
+
+svg {
+    width: 100%;
+    height: 100%;
+}
+
+.edge {
+    stroke: #647c91;
+    stroke-width: 1.5;
+    opacity: .7;
+}
+
+.edge.string {
+    stroke: var(--yellow);
+}
+
+.edge.call {
+    stroke: var(--blue);
+}
+
+.node {
+    cursor: pointer;
+}
+
+.node rect {
+    stroke-width: 2;
+}
+
+.node text {
+    fill: var(--text);
+    font-size: 12px;
+    pointer-events: none;
+    text-anchor: middle;
+    dominant-baseline: middle;
+}
+
+.node.function rect {
+    fill: #18364a;
+    stroke: var(--blue);
+}
+
+.node.string rect {
+    fill: #473719;
+    stroke: var(--yellow);
+}
+
+.node.import rect {
+    fill: #40283e;
+    stroke: var(--purple);
+}
+
+.node.selected rect {
+    stroke: var(--green);
+    stroke-width: 4;
+}
+
+.empty {
+    padding: 35px 12px;
+    color: var(--muted);
+    text-align: center;
+}
+
+pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    direction: ltr;
+    text-align: left;
+    background: #0a1016;
+    color: #b9d4e6;
     border: 1px solid var(--border);
-    border-radius: 10px;
-    margin-bottom: 30px;
+    border-radius: 8px;
+    padding: 12px;
+    max-height: 450px;
+    overflow: auto;
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 1000px;
+    direction: ltr;
+}
+
+th,
+td {
+    border-bottom: 1px solid var(--border);
+    padding: 8px;
+    text-align: left;
+    font-size: 12px;
 }
 
 th {
-    background: var(--panel2);
     color: var(--green);
-    padding: 13px 8px;
+    background: var(--panel2);
 }
 
-td {
-    padding: 11px 8px;
-    border-bottom: 1px solid var(--border);
-    text-align: center;
+@media (max-width: 1250px) {
+    .layout {
+        grid-template-columns: 330px 1fr;
+    }
+
+    .right-panel {
+        grid-column: 1 / -1;
+    }
 }
 
-tr:hover {
-    background: #1f2933;
-}
+@media (max-width: 760px) {
+    .app {
+        padding: 8px;
+    }
 
-code {
-    color: var(--yellow);
-    direction: ltr;
-    display: inline-block;
-}
+    .layout {
+        display: block;
+    }
 
-.name {
-    direction: ltr;
-    text-align: left;
-    font-family: monospace;
-}
+    .panel {
+        margin-bottom: 12px;
+    }
 
-.section-title {
-    color: var(--blue);
-    margin-top: 30px;
-}
-
-.hidden {
-    display: none;
-}
-
-.empty {
-    text-align: center;
-    color: var(--muted);
-    padding: 25px;
+    .graph-wrap {
+        height: 500px;
+    }
 }
 </style>
 </head>
 
 <body>
-<div class="container">
+<div class="app">
 
-<h1>أداة تحليل ELF / SO</h1>
-
-<div class="subtitle">
-    نسخة تعمل بالكامل داخل المتصفح باستخدام HTML وJavaScript
-</div>
-
-<div class="upload-box">
-    <input id="fileInput" type="file" accept=".so,.elf,*">
-    <button onclick="analyzeFile()">تحليل الملف</button>
-    <div id="status" class="status"></div>
-</div>
-
-<div id="dashboard" class="hidden">
-
-    <div class="cards">
-        <div class="card">
-            <div class="card-title">اسم الملف</div>
-            <div id="fileName" class="card-value">-</div>
+<header>
+    <div>
+        <h1>ELF String XREF Analyzer</h1>
+        <div class="subtitle">
+            تحليل السلاسل والأوفستات وشبكة العلاقات
         </div>
-
-        <div class="card">
-            <div class="card-title">المعمارية</div>
-            <div id="architecture" class="card-value">-</div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">حجم الملف</div>
-            <div id="fileSize" class="card-value">-</div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">الأقسام</div>
-            <div id="sectionCount" class="card-value">-</div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">الرموز</div>
-            <div id="symbolCount" class="card-value">-</div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">النصوص</div>
-            <div id="stringCount" class="card-value">-</div>
-        </div>
-    </div>
-
-    <div class="tabs">
-        <button class="tab active" onclick="showTab('sections', this)">
-            الأقسام
-        </button>
-
-        <button class="tab" onclick="showTab('strings', this)">
-            النصوص
-        </button>
-
-        <button class="tab" onclick="showTab('symbols', this)">
-            الرموز
-        </button>
-
-        <button class="tab" onclick="showTab('imports', this)">
-            الاستيرادات
-        </button>
-
-        <button class="tab" onclick="showTab('exports', this)">
-            التصديرات
-        </button>
     </div>
 
     <input
-        id="search"
+        id="jsonFile"
+        type="file"
+        accept=".json"
+        onchange="loadJson(event)"
+    >
+</header>
+
+<div class="toolbar">
+    <input
+        id="globalSearch"
         class="search"
-        type="search"
-        placeholder="بحث..."
-        oninput="filterTable()"
+        placeholder="ابحث عن String أو RVA أو اسم دالة..."
+        oninput="renderAll()"
     >
 
-    <section id="sections" class="tab-section">
-        <h2 class="section-title">أقسام الملف</h2>
+    <button
+        id="btnStrings"
+        class="active"
+        onclick="setMode('strings')"
+    >
+        Strings
+    </button>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>الاسم</th>
-                        <th>العنوان</th>
-                        <th>File Offset</th>
-                        <th>الحجم</th>
-                        <th>النوع</th>
-                        <th>Flags</th>
-                    </tr>
-                </thead>
-                <tbody id="sectionsBody"></tbody>
-            </table>
+    <button
+        id="btnFunctions"
+        onclick="setMode('functions')"
+    >
+        Functions
+    </button>
+
+    <button
+        id="btnImports"
+        onclick="setMode('imports')"
+    >
+        Imports
+    </button>
+
+    <button
+        onclick="clearSelection()"
+    >
+        مسح التحديد
+    </button>
+</div>
+
+<div class="cards">
+    <div class="card">
+        <div class="card-label">المعمارية</div>
+        <div id="arch" class="card-value">-</div>
+    </div>
+
+    <div class="card">
+        <div class="card-label">الدوال</div>
+        <div id="functionCount" class="card-value">0</div>
+    </div>
+
+    <div class="card">
+        <div class="card-label">Strings</div>
+        <div id="stringCount" class="card-value">0</div>
+    </div>
+
+    <div class="card">
+        <div class="card-label">الأوفستات</div>
+        <div id="offsetCount" class="card-value">0</div>
+    </div>
+
+    <div class="card">
+        <div class="card-label">العلاقات</div>
+        <div id="relationCount" class="card-value">0</div>
+    </div>
+</div>
+
+<div class="layout">
+
+<section class="panel">
+    <div class="panel-header">
+        <span id="listTitle" class="panel-title">
+            قائمة Strings
+        </span>
+
+        <span id="listCount" class="badge badge-green">
+            0
+        </span>
+    </div>
+
+    <div id="mainList" class="list"></div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <span class="panel-title">
+            شبكة الأوفستات المرتبطة
+        </span>
+
+        <span class="badge badge-yellow">
+            اضغط على عقدة
+        </span>
+    </div>
+
+    <div id="graph" class="graph-wrap">
+        <div class="empty">
+            اختر String أو Function لعرض الشبكة
         </div>
-    </section>
+    </div>
+</section>
 
-    <section id="strings" class="tab-section hidden">
-        <h2 class="section-title">النصوص المستخرجة</h2>
+<section class="panel right-panel">
+    <div class="panel-header">
+        <span class="panel-title">
+            تفاصيل العنصر
+        </span>
+    </div>
 
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>File Offset</th>
-                        <th>RVA</th>
-                        <th>النص</th>
-                    </tr>
-                </thead>
-                <tbody id="stringsBody"></tbody>
-            </table>
+    <div id="details" class="panel-body">
+        <div class="empty">
+            لا يوجد عنصر محدد
         </div>
-    </section>
-
-    <section id="symbols" class="tab-section hidden">
-        <h2 class="section-title">الرموز</h2>
-
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>الاسم</th>
-                        <th>القيمة</th>
-                        <th>RVA</th>
-                        <th>File Offset</th>
-                        <th>الحجم</th>
-                    </tr>
-                </thead>
-                <tbody id="symbolsBody"></tbody>
-            </table>
-        </div>
-    </section>
-
-    <section id="imports" class="tab-section hidden">
-        <h2 class="section-title">الاستيرادات</h2>
-
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>اسم الاستيراد</th>
-                    </tr>
-                </thead>
-                <tbody id="importsBody"></tbody>
-            </table>
-        </div>
-    </section>
-
-    <section id="exports" class="tab-section hidden">
-        <h2 class="section-title">التصديرات</h2>
-
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>اسم التصدير</th>
-                    </tr>
-                </thead>
-                <tbody id="exportsBody"></tbody>
-            </table>
-        </div>
-    </section>
+    </div>
+</section>
 
 </div>
 </div>
 
 <script>
-let analysis = null;
-let currentTab = "sections";
+let DATA = null;
+let MODE = "strings";
+let SELECTED = null;
 
-function hex(value) {
-    return "0x" + Number(value).toString(16).toUpperCase();
-}
-
-function escapeHtml(value) {
+function esc(value) {
     return String(value ?? "")
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
@@ -390,622 +575,1222 @@ function escapeHtml(value) {
         .replaceAll("'", "&#039;");
 }
 
-function readU16(view, offset, littleEndian) {
-    return view.getUint16(offset, littleEndian);
+function hex(value) {
+    if (value === undefined || value === null) {
+        return "-";
+    }
+
+    const number = Number(value);
+
+    if (!Number.isFinite(number)) {
+        return String(value);
+    }
+
+    return "0x" + number
+        .toString(16)
+        .toUpperCase()
+        .padStart(6, "0");
 }
 
-function readU32(view, offset, littleEndian) {
-    return view.getUint32(offset, littleEndian);
+function offsetOfFunction(fn) {
+    if (fn.offset !== undefined) {
+        return fn.offset;
+    }
+
+    if (fn.file_offset !== undefined) {
+        return fn.file_offset;
+    }
+
+    return null;
 }
 
-function readU64(view, offset, littleEndian) {
-    return Number(
-        view.getBigUint64(offset, littleEndian)
+function functionKey(fn) {
+    return String(
+        fn.rva ??
+        fn.offset ??
+        fn.name
     );
 }
 
-function getString(bytes, offset) {
-    let end = offset;
-
-    while (
-        end < bytes.length &&
-        bytes[end] !== 0
-    ) {
-        end++;
+function getFunctions() {
+    if (!DATA) {
+        return [];
     }
 
-    return new TextDecoder("latin1")
-        .decode(bytes.slice(offset, end));
+    return [
+        ...(DATA.protection || []),
+        ...(DATA.crash || []),
+        ...(DATA.related || []),
+        ...(DATA.functions || [])
+    ];
 }
 
-function getArchitecture(machine) {
-    const architectures = {
-        3: "x86",
-        8: "MIPS",
-        40: "ARM32",
-        62: "x86-64",
-        183: "AArch64",
-        243: "RISC-V"
-    };
+function uniqueFunctions() {
+    const map = new Map();
 
-    return architectures[machine] || "Unknown " + hex(machine);
+    for (const fn of getFunctions()) {
+        const key = functionKey(fn);
+
+        if (!map.has(key)) {
+            map.set(key, fn);
+        }
+    }
+
+    return [...map.values()];
 }
 
-function sectionNameAt(bytes, stringTableOffset, nameOffset) {
-    if (!nameOffset) {
-        return "";
-    }
+function buildStringIndex() {
+    const map = new Map();
 
-    return getString(
-        bytes,
-        stringTableOffset + nameOffset
-    );
-}
+    for (const fn of uniqueFunctions()) {
+        const strings = fn.strings_ref || [];
 
-function rvaToOffset(sections, rva) {
-    for (const section of sections) {
-        const start = section.address;
-        const end = start + section.size;
-
-        if (
-            rva >= start &&
-            rva < end
-        ) {
-            return section.offset + (rva - start);
-        }
-    }
-
-    return rva;
-}
-
-function extractStrings(bytes, sections) {
-    const result = [];
-    const minimumLength = 4;
-
-    for (let offset = 0; offset < bytes.length;) {
-        let start = offset;
-
-        while (
-            offset < bytes.length &&
-            bytes[offset] >= 32 &&
-            bytes[offset] <= 126
-        ) {
-            offset++;
-        }
-
-        if (offset - start >= minimumLength) {
-            const text = new TextDecoder("latin1")
-                .decode(bytes.slice(start, offset));
-
-            result.push({
-                offset: start,
-                rva: offsetToRva(sections, start),
-                text
-            });
-        }
-
-        offset++;
-    }
-
-    return result;
-}
-
-function offsetToRva(sections, offset) {
-    for (const section of sections) {
-        const start = section.offset;
-        const end = start + section.size;
-
-        if (
-            offset >= start &&
-            offset < end
-        ) {
-            return section.address + (offset - start);
-        }
-    }
-
-    return offset;
-}
-
-function parseElf(buffer) {
-    const bytes = new Uint8Array(buffer);
-    const view = new DataView(buffer);
-
-    if (
-        bytes[0] !== 0x7f ||
-        bytes[1] !== 0x45 ||
-        bytes[2] !== 0x4c ||
-        bytes[3] !== 0x46
-    ) {
-        throw new Error("الملف ليس ELF صالحًا");
-    }
-
-    const elfClass = bytes[4];
-    const dataEncoding = bytes[5];
-    const littleEndian = dataEncoding === 1;
-
-    if (
-        elfClass !== 1 &&
-        elfClass !== 2
-    ) {
-        throw new Error("نوع ELF غير مدعوم");
-    }
-
-    const is64 = elfClass === 2;
-    const machine = readU16(
-        view,
-        18,
-        littleEndian
-    );
-
-    const sectionHeaderOffset = is64
-        ? readU64(view, 40, littleEndian)
-        : readU32(view, 32, littleEndian);
-
-    const sectionHeaderSize = readU16(
-        view,
-        is64 ? 58 : 46,
-        littleEndian
-    );
-
-    const sectionCount = readU16(
-        view,
-        is64 ? 60 : 48,
-        littleEndian
-    );
-
-    const sectionStringIndex = readU16(
-        view,
-        is64 ? 62 : 50,
-        littleEndian
-    );
-
-    const rawSections = [];
-
-    for (
-        let i = 0;
-        i < sectionCount;
-        i++
-    ) {
-        const offset =
-            sectionHeaderOffset +
-            i * sectionHeaderSize;
-
-        let name;
-        let type;
-        let flags;
-        let address;
-        let fileOffset;
-        let size;
-        let link;
-        let entrySize;
-
-        if (is64) {
-            name = readU32(view, offset, littleEndian);
-            type = readU32(view, offset + 4, littleEndian);
-            flags = readU64(view, offset + 8, littleEndian);
-            address = readU64(view, offset + 16, littleEndian);
-            fileOffset = readU64(view, offset + 24, littleEndian);
-            size = readU64(view, offset + 32, littleEndian);
-            link = readU32(view, offset + 40, littleEndian);
-            entrySize = readU64(view, offset + 56, littleEndian);
-        } else {
-            name = readU32(view, offset, littleEndian);
-            type = readU32(view, offset + 4, littleEndian);
-            flags = readU32(view, offset + 8, littleEndian);
-            address = readU32(view, offset + 12, littleEndian);
-            fileOffset = readU32(view, offset + 16, littleEndian);
-            size = readU32(view, offset + 20, littleEndian);
-            link = readU32(view, offset + 24, littleEndian);
-            entrySize = readU32(view, offset + 36, littleEndian);
-        }
-
-        rawSections.push({
-            nameOffset: name,
-            type,
-            flags,
-            address,
-            offset: fileOffset,
-            size,
-            link,
-            entrySize
-        });
-    }
-
-    const stringSection =
-        rawSections[sectionStringIndex];
-
-    const stringTableOffset =
-        stringSection
-            ? stringSection.offset
-            : 0;
-
-    const sections = rawSections.map(section => ({
-        ...section,
-        name: sectionNameAt(
-            bytes,
-            stringTableOffset,
-            section.nameOffset
-        )
-    }));
-
-    const symbols = [];
-    const imports = [];
-    const exports = [];
-
-    for (const section of sections) {
-        if (
-            section.type !== 2 &&
-            section.type !== 11
-        ) {
-            continue;
-        }
-
-        const linkedStringTable =
-            sections[section.link];
-
-        if (!linkedStringTable) {
-            continue;
-        }
-
-        const symbolSize =
-            section.entrySize ||
-            (is64 ? 24 : 16);
-
-        const count =
-            Math.floor(
-                section.size / symbolSize
-            );
-
-        for (let i = 0; i < count; i++) {
-            const offset =
-                section.offset +
-                i * symbolSize;
-
-            let nameOffset;
-            let value;
-            let symbolSizeValue;
-            let info;
-            let sectionIndex;
-
-            if (is64) {
-                nameOffset = readU32(
-                    view,
-                    offset,
-                    littleEndian
-                );
-
-                info = bytes[offset + 4];
-
-                sectionIndex = readU16(
-                    view,
-                    offset + 6,
-                    littleEndian
-                );
-
-                value = readU64(
-                    view,
-                    offset + 8,
-                    littleEndian
-                );
-
-                symbolSizeValue = readU64(
-                    view,
-                    offset + 16,
-                    littleEndian
-                );
-            } else {
-                nameOffset = readU32(
-                    view,
-                    offset,
-                    littleEndian
-                );
-
-                value = readU32(
-                    view,
-                    offset + 4,
-                    littleEndian
-                );
-
-                symbolSizeValue = readU32(
-                    view,
-                    offset + 8,
-                    littleEndian
-                );
-
-                info = bytes[offset + 12];
-
-                sectionIndex = readU16(
-                    view,
-                    offset + 14,
-                    littleEndian
-                );
+        for (const text of strings) {
+            if (!map.has(text)) {
+                map.set(text, {
+                    text,
+                    functions: [],
+                    offsets: [],
+                    imports: new Set()
+                });
             }
 
-            if (!nameOffset) {
-                continue;
-            }
+            const item = map.get(text);
 
-            const symbolName = getString(
-                bytes,
-                linkedStringTable.offset + nameOffset
-            );
+            item.functions.push(fn);
 
-            if (!symbolName) {
-                continue;
-            }
+            const candidates = [
+                ...(fn.data_refs || []),
+                ...(fn.xref_offsets || []),
+                fn.rva,
+                offsetOfFunction(fn)
+            ];
 
-            const symbol = {
-                name: symbolName,
-                value,
-                offset: rvaToOffset(
-                    sections,
-                    value
-                ),
-                size: symbolSizeValue,
-                info,
-                sectionIndex
-            };
-
-            symbols.push(symbol);
-
-            const symbolType = info & 0x0f;
-            const bind = info >> 4;
-
-            if (symbolType === 2) {
-                if (sectionIndex === 0) {
-                    imports.push(symbolName);
-                } else if (
-                    bind === 1 ||
-                    bind === 2
+            for (const offset of candidates) {
+                if (
+                    offset !== undefined &&
+                    offset !== null &&
+                    !item.offsets.includes(offset)
                 ) {
-                    exports.push(symbolName);
+                    item.offsets.push(offset);
                 }
             }
+
+            for (const api of fn.imports_called || []) {
+                item.imports.add(api);
+            }
         }
     }
 
-    const strings = extractStrings(
-        bytes,
-        sections
-    );
-
-    return {
-        bytes,
-        is64,
-        littleEndian,
-        architecture: getArchitecture(machine),
-        sections,
-        symbols,
-        imports: [...new Set(imports)].sort(),
-        exports: [...new Set(exports)].sort(),
-        strings
-    };
+    return [...map.values()]
+        .sort((a, b) => a.text.localeCompare(b.text));
 }
 
-async function analyzeFile() {
-    const input = document.getElementById("fileInput");
-    const status = document.getElementById("status");
+function getImports() {
+    const imports = new Set();
 
-    if (!input.files.length) {
-        status.textContent = "اختر ملفًا أولًا";
+    for (const fn of uniqueFunctions()) {
+        for (const api of fn.imports_called || []) {
+            imports.add(api);
+        }
+    }
+
+    for (const api of DATA?.imports || []) {
+        imports.add(api);
+    }
+
+    return [...imports].sort();
+}
+
+function searchable(value, query) {
+    return String(value ?? "")
+        .toLowerCase()
+        .includes(query);
+}
+
+function setMode(mode) {
+    MODE = mode;
+
+    document.querySelectorAll(".toolbar button")
+        .forEach(btn => btn.classList.remove("active"));
+
+    const button = document.getElementById(
+        mode === "strings"
+            ? "btnStrings"
+            : mode === "functions"
+                ? "btnFunctions"
+                : "btnImports"
+    );
+
+    if (button) {
+        button.classList.add("active");
+    }
+
+    renderAll();
+}
+
+function loadJson(event) {
+    const file = event.target.files[0];
+
+    if (!file) {
         return;
     }
 
-    const file = input.files[0];
+    const reader = new FileReader();
 
-    status.textContent = "جاري قراءة وتحليل الملف...";
+    reader.onload = () => {
+        try {
+            DATA = JSON.parse(reader.result);
+            SELECTED = null;
+            updateStats();
+            renderAll();
+        } catch (error) {
+            alert("ملف JSON غير صالح");
+        }
+    };
 
-    try {
-        const buffer = await file.arrayBuffer();
-
-        analysis = parseElf(buffer);
-
-        document.getElementById("dashboard")
-            .classList.remove("hidden");
-
-        document.getElementById("fileName")
-            .textContent = file.name;
-
-        document.getElementById("architecture")
-            .textContent = analysis.architecture;
-
-        document.getElementById("fileSize")
-            .textContent = formatBytes(file.size);
-
-        document.getElementById("sectionCount")
-            .textContent = analysis.sections.length;
-
-        document.getElementById("symbolCount")
-            .textContent = analysis.symbols.length;
-
-        document.getElementById("stringCount")
-            .textContent = analysis.strings.length;
-
-        renderSections();
-        renderStrings();
-        renderSymbols();
-        renderImports();
-        renderExports();
-
-        status.textContent =
-            "تم التحليل وعرض النتائج مباشرة";
-
-    } catch (error) {
-        status.textContent =
-            "خطأ: " + error.message;
-    }
+    reader.readAsText(file);
 }
 
-function formatBytes(bytes) {
-    if (bytes < 1024) {
-        return bytes + " B";
+function updateStats() {
+    if (!DATA) {
+        return;
     }
 
-    if (bytes < 1024 * 1024) {
-        return (
-            (bytes / 1024).toFixed(2) +
-            " KB"
-        );
+    const functions = uniqueFunctions();
+    const strings = buildStringIndex();
+
+    const offsets = new Set();
+    let relations = 0;
+
+    for (const fn of functions) {
+        for (const item of fn.xref_offsets || []) {
+            offsets.add(item);
+        }
+
+        for (const item of fn.data_refs || []) {
+            offsets.add(item);
+        }
+
+        relations +=
+            (fn.local_calls || []).length +
+            (fn.strings_ref || []).length;
     }
 
-    return (
-        (bytes / 1024 / 1024).toFixed(2) +
-        " MB"
-    );
+    document.getElementById("arch")
+        .textContent = DATA.arch || DATA.architecture || "-";
+
+    document.getElementById("functionCount")
+        .textContent = functions.length;
+
+    document.getElementById("stringCount")
+        .textContent = strings.length;
+
+    document.getElementById("offsetCount")
+        .textContent = offsets.size;
+
+    document.getElementById("relationCount")
+        .textContent = relations;
 }
 
-function renderSections() {
-    const body = document.getElementById(
-        "sectionsBody"
-    );
+function renderAll() {
+    if (!DATA) {
+        return;
+    }
 
-    body.innerHTML = analysis.sections.map(
-        (section, index) => `
-        <tr>
-            <td>${index + 1}</td>
-            <td class="name">
-                ${escapeHtml(section.name)}
-            </td>
-            <td>
-                <code>${hex(section.address)}</code>
-            </td>
-            <td>
-                <code>${hex(section.offset)}</code>
-            </td>
-            <td>${section.size}</td>
-            <td>${section.type}</td>
-            <td>${hex(section.flags)}</td>
-        </tr>
-        `
-    ).join("");
+    renderList();
+    renderSelected();
 }
 
-function renderStrings() {
-    const body = document.getElementById(
-        "stringsBody"
-    );
-
-    body.innerHTML = analysis.strings.map(
-        (item, index) => `
-        <tr>
-            <td>${index + 1}</td>
-            <td>
-                <code>${hex(item.offset)}</code>
-            </td>
-            <td>
-                <code>${hex(item.rva)}</code>
-            </td>
-            <td class="name">
-                ${escapeHtml(item.text)}
-            </td>
-        </tr>
-        `
-    ).join("");
-}
-
-function renderSymbols() {
-    const body = document.getElementById(
-        "symbolsBody"
-    );
-
-    body.innerHTML = analysis.symbols.map(
-        (symbol, index) => `
-        <tr>
-            <td>${index + 1}</td>
-            <td class="name">
-                ${escapeHtml(symbol.name)}
-            </td>
-            <td>
-                <code>${hex(symbol.value)}</code>
-            </td>
-            <td>
-                <code>${hex(symbol.value)}</code>
-            </td>
-            <td>
-                <code>${hex(symbol.offset)}</code>
-            </td>
-            <td>${symbol.size}</td>
-        </tr>
-        `
-    ).join("");
-}
-
-function renderImports() {
-    const body = document.getElementById(
-        "importsBody"
-    );
-
-    body.innerHTML = analysis.imports.map(
-        (name, index) => `
-        <tr>
-            <td>${index + 1}</td>
-            <td class="name">
-                ${escapeHtml(name)}
-            </td>
-        </tr>
-        `
-    ).join("");
-}
-
-function renderExports() {
-    const body = document.getElementById(
-        "exportsBody"
-    );
-
-    body.innerHTML = analysis.exports.map(
-        (name, index) => `
-        <tr>
-            <td>${index + 1}</td>
-            <td class="name">
-                ${escapeHtml(name)}
-            </td>
-        </tr>
-        `
-    ).join("");
-}
-
-function showTab(name, button) {
-    currentTab = name;
-
-    document.querySelectorAll(".tab-section")
-        .forEach(section => {
-            section.classList.add("hidden");
-        });
-
-    document.getElementById(name)
-        .classList.remove("hidden");
-
-    document.querySelectorAll(".tab")
-        .forEach(tab => {
-            tab.classList.remove("active");
-        });
-
-    button.classList.add("active");
-
-    filterTable();
-}
-
-function filterTable() {
-    const query = document.getElementById("search")
+function renderList() {
+    const container = document.getElementById("mainList");
+    const query = document.getElementById("globalSearch")
         .value
         .toLowerCase()
         .trim();
 
-    const section = document.getElementById(
-        currentTab
+    let items = [];
+
+    if (MODE === "strings") {
+        items = buildStringIndex()
+            .filter(item => {
+                return searchable(item.text, query) ||
+                    item.functions.some(fn =>
+                        searchable(fn.name, query) ||
+                        searchable(hex(fn.rva), query)
+                    );
+            });
+
+        document.getElementById("listTitle")
+            .textContent = "قائمة Strings";
+
+        container.innerHTML = items.map((item, index) => `
+            <div
+                class="item ${
+                    SELECTED?.type === "string" &&
+                    SELECTED?.value === item.text
+                        ? "selected"
+                        : ""
+                }"
+                onclick="selectString(${index})"
+            >
+                <div class="item-main">
+                    ${esc(item.text)}
+                </div>
+
+                <div class="item-meta">
+                    <span class="badge badge-yellow">
+                        ${item.offsets.length} offset
+                    </span>
+
+                    <span class="badge badge-blue">
+                        ${item.functions.length} function
+                    </span>
+
+                    <span class="badge badge-purple">
+                        ${item.imports.size} API
+                    </span>
+                </div>
+            </div>
+        `).join("");
+
+        window.__visibleItems = items;
+    }
+
+    if (MODE === "functions") {
+        items = uniqueFunctions()
+            .filter(fn => {
+                return searchable(fn.name, query) ||
+                    searchable(hex(fn.rva), query) ||
+                    (fn.strings_ref || [])
+                        .some(s => searchable(s, query));
+            })
+            .sort((a, b) =>
+                Number(b.confidence || b.score || 0) -
+                Number(a.confidence || a.score || 0)
+            );
+
+        document.getElementById("listTitle")
+            .textContent = "قائمة Functions";
+
+        container.innerHTML = items.map((fn, index) => `
+            <div
+                class="item ${
+                    SELECTED?.type === "function" &&
+                    SELECTED?.key === functionKey(fn)
+                        ? "selected"
+                        : ""
+                }"
+                onclick="selectFunction(${index})"
+            >
+                <div class="item-main">
+                    ${esc(fn.name || "sub_" + hex(fn.rva))}
+                </div>
+
+                <div class="item-meta">
+                    <span class="badge badge-blue">
+                        RVA ${hex(fn.rva)}
+                    </span>
+
+                    <span class="badge badge-green">
+                        ثقة ${fn.confidence ?? fn.score ?? 0}%
+                    </span>
+
+                    <span class="badge badge-yellow">
+                        Strings ${(fn.strings_ref || []).length}
+                    </span>
+                </div>
+            </div>
+        `).join("");
+
+        window.__visibleItems = items;
+    }
+
+    if (MODE === "imports") {
+        items = getImports()
+            .filter(api => searchable(api, query));
+
+        document.getElementById("listTitle")
+            .textContent = "قائمة Imports";
+
+        container.innerHTML = items.map((api, index) => `
+            <div
+                class="item ${
+                    SELECTED?.type === "import" &&
+                    SELECTED?.value === api
+                        ? "selected"
+                        : ""
+                }"
+                onclick="selectImport(${index})"
+            >
+                <div class="item-main">
+                    ${esc(api)}
+                </div>
+
+                <div class="item-meta">
+                    ${countImportFunctions(api)} دالة مرتبطة
+                </div>
+            </div>
+        `).join("");
+
+        window.__visibleItems = items;
+    }
+
+    document.getElementById("listCount")
+        .textContent = items.length;
+
+    if (!items.length) {
+        container.innerHTML = `
+            <div class="empty">
+                لا توجد نتائج
+            </div>
+        `;
+    }
+}
+
+function selectString(index) {
+    const item = window.__visibleItems[index];
+
+    SELECTED = {
+        type: "string",
+        value: item.text,
+        data: item
+    };
+
+    renderAll();
+}
+
+function selectFunction(index) {
+    const fn = window.__visibleItems[index];
+
+    SELECTED = {
+        type: "function",
+        key: functionKey(fn),
+        value: fn,
+        data: fn
+    };
+
+    renderAll();
+}
+
+function selectImport(index) {
+    const api = window.__visibleItems[index];
+
+    SELECTED = {
+        type: "import",
+        value: api,
+        data: api
+    };
+
+    renderAll();
+}
+
+function clearSelection() {
+    SELECTED = null;
+    renderAll();
+}
+
+function countImportFunctions(api) {
+    return uniqueFunctions()
+        .filter(fn =>
+            (fn.imports_called || []).includes(api)
+        )
+        .length;
+}
+
+function renderSelected() {
+    if (!SELECTED) {
+        document.getElementById("details")
+            .innerHTML = `
+                <div class="empty">
+                    لا يوجد عنصر محدد
+                </div>
+            `;
+
+        document.getElementById("graph")
+            .innerHTML = `
+                <div class="empty">
+                    اختر String أو Function لعرض الشبكة
+                </div>
+            `;
+
+        return;
+    }
+
+    if (SELECTED.type === "string") {
+        renderStringDetails(SELECTED.data);
+        renderStringGraph(SELECTED.data);
+    }
+
+    if (SELECTED.type === "function") {
+        renderFunctionDetails(SELECTED.data);
+        renderFunctionGraph(SELECTED.data);
+    }
+
+    if (SELECTED.type === "import") {
+        renderImportDetails(SELECTED.value);
+        renderImportGraph(SELECTED.value);
+    }
+}
+
+function renderStringDetails(item) {
+    const offsets = item.offsets
+        .map(offset => `
+            <div class="offset-row">
+                <span>RVA</span>
+                <code>${hex(offset)}</code>
+            </div>
+        `)
+        .join("");
+
+    const functions = item.functions
+        .map(fn => `
+            <div
+                class="item"
+                onclick='selectFunctionByKey(${JSON.stringify(functionKey(fn))})'
+            >
+                <div class="item-main">
+                    ${esc(fn.name || "sub_" + hex(fn.rva))}
+                </div>
+
+                <div class="item-meta">
+                    RVA ${hex(fn.rva)}
+                    |
+                    File Offset ${hex(offsetOfFunction(fn))}
+                    |
+                    ثقة ${fn.confidence ?? fn.score ?? 0}%
+                </div>
+            </div>
+        `)
+        .join("");
+
+    const imports = [...item.imports]
+        .map(api => `
+            <span class="badge badge-purple">
+                ${esc(api)}
+            </span>
+        `)
+        .join("");
+
+    document.getElementById("details")
+        .innerHTML = `
+            <div class="details">
+                <div class="details-section">
+                    <div class="details-title">
+                        String
+                    </div>
+
+                    <pre>${esc(item.text)}</pre>
+                </div>
+
+                <div class="details-section">
+                    <div class="details-title">
+                        جميع الأوفستات (${item.offsets.length})
+                    </div>
+
+                    ${offsets || `
+                        <div class="empty">
+                            لا توجد أوفستات مسجلة
+                        </div>
+                    `}
+                </div>
+
+                <div class="details-section">
+                    <div class="details-title">
+                        الدوال المرتبطة (${item.functions.length})
+                    </div>
+
+                    ${functions || `
+                        <div class="empty">
+                            لا توجد دوال مرتبطة
+                        </div>
+                    `}
+                </div>
+
+                <div class="details-section">
+                    <div class="details-title">
+                        APIs المرتبطة
+                    </div>
+
+                    ${imports || "-"}
+                </div>
+            </div>
+        `;
+}
+
+function selectFunctionByKey(key) {
+    const fn = uniqueFunctions()
+        .find(item => functionKey(item) === String(key));
+
+    if (!fn) {
+        return;
+    }
+
+    SELECTED = {
+        type: "function",
+        key: functionKey(fn),
+        value: fn,
+        data: fn
+    };
+
+    renderAll();
+}
+
+function renderFunctionDetails(fn) {
+    const strings = (fn.strings_ref || [])
+        .map(text => `
+            <div
+                class="item"
+                onclick='selectStringByValue(${JSON.stringify(text)})'
+            >
+                <div class="item-main">
+                    ${esc(text)}
+                </div>
+            </div>
+        `)
+        .join("");
+
+    const calls = (fn.local_calls || [])
+        .map(rva => `
+            <div
+                class="offset-row"
+                onclick='selectFunctionByRva(${Number(rva)})'
+            >
+                <span>Local Call</span>
+                <code>${hex(rva)}</code>
+            </div>
+        `)
+        .join("");
+
+    const imports = (fn.imports_called || [])
+        .map(api => `
+            <span class="badge badge-purple">
+                ${esc(api)}
+            </span>
+        `)
+        .join("");
+
+    const dataRefs = (fn.data_refs || fn.xref_offsets || [])
+        .map(offset => `
+            <div class="offset-row">
+                <span>Data Ref</span>
+                <code>${hex(offset)}</code>
+            </div>
+        `)
+        .join("");
+
+    document.getElementById("details")
+        .innerHTML = `
+            <div class="details">
+                <div class="details-section">
+                    <div class="details-title">
+                        معلومات الدالة
+                    </div>
+
+                    <div class="kv">
+                        <b>الاسم</b>
+                        <code>${esc(fn.name || "-")}</code>
+
+                        <b>RVA</b>
+                        <code>${hex(fn.rva)}</code>
+
+                        <b>File Offset</b>
+                        <code>${hex(offsetOfFunction(fn))}</code>
+
+                        <b>النهاية</b>
+                        <code>${hex(fn.end)}</code>
+
+                        <b>الحجم</b>
+                        <span>${fn.size ?? "-"} bytes</span>
+
+                        <b>الثقة</b>
+                        <span>${fn.confidence ?? fn.score ?? 0}%</span>
+
+                        <b>المستدعية</b>
+                        <span>${fn.n_callers ?? 0}</span>
+
+                        <b>المستدعاة</b>
+                        <span>${fn.n_callees ?? 0}</span>
+                    </div>
+                </div>
+
+                <div class="details-section">
+                    <div class="details-title">
+                        Strings (${(fn.strings_ref || []).length})
+                    </div>
+
+                    ${strings || "-"}
+                </div>
+
+                <div class="details-section">
+                    <div class="details-title">
+                        Data References
+                    </div>
+
+                    ${dataRefs || "-"}
+                </div>
+
+                <div class="details-section">
+                    <div class="details-title">
+                        Local Calls
+                    </div>
+
+                    ${calls || "-"}
+                </div>
+
+                <div class="details-section">
+                    <div class="details-title">
+                        Imports
+                    </div>
+
+                    ${imports || "-"}
+                </div>
+
+                <div class="details-section">
+                    <div class="details-title">
+                        Disassembly
+                    </div>
+
+                    <pre>${esc(formatDisasm(fn.disasm || []))}</pre>
+                </div>
+            </div>
+        `;
+}
+
+function selectStringByValue(value) {
+    const item = buildStringIndex()
+        .find(entry => entry.text === value);
+
+    if (!item) {
+        return;
+    }
+
+    SELECTED = {
+        type: "string",
+        value,
+        data: item
+    };
+
+    renderAll();
+}
+
+function selectFunctionByRva(rva) {
+    const fn = uniqueFunctions()
+        .find(item => Number(item.rva) === Number(rva));
+
+    if (!fn) {
+        return;
+    }
+
+    SELECTED = {
+        type: "function",
+        key: functionKey(fn),
+        value: fn,
+        data: fn
+    };
+
+    renderAll();
+}
+
+function renderImportDetails(api) {
+    const functions = uniqueFunctions()
+        .filter(fn =>
+            (fn.imports_called || []).includes(api)
+        );
+
+    document.getElementById("details")
+        .innerHTML = `
+            <div class="details">
+                <div class="details-section">
+                    <div class="details-title">
+                        Import
+                    </div>
+
+                    <pre>${esc(api)}</pre>
+                </div>
+
+                <div class="details-section">
+                    <div class="details-title">
+                        الدوال التي تستدعيه
+                        (${functions.length})
+                    </div>
+
+                    ${functions.map(fn => `
+                        <div
+                            class="item"
+                            onclick='selectFunctionByKey(${JSON.stringify(functionKey(fn))})'
+                        >
+                            <div class="item-main">
+                                ${esc(fn.name || "sub_" + hex(fn.rva))}
+                            </div>
+
+                            <div class="item-meta">
+                                ${hex(fn.rva)}
+                            </div>
+                        </div>
+                    `).join("")}
+                </div>
+            </div>
+        `;
+}
+
+function formatDisasm(disasm) {
+    return disasm
+        .slice(0, 500)
+        .map(ins => {
+            const pc = hex(ins.pc);
+            const raw = ins.hex || "";
+            const mnemonic = ins.mnemonic || "";
+            const operands = ins.operands || "";
+
+            return `${pc.padEnd(12)} ${raw.padEnd(12)} ${mnemonic.padEnd(10)} ${operands}`;
+        })
+        .join("
+");
+}
+
+function renderStringGraph(item) {
+    const nodes = [];
+    const edges = [];
+    const nodeMap = new Map();
+
+    function addNode(id, type, label, meta) {
+        if (nodeMap.has(id)) {
+            return;
+        }
+
+        const node = {
+            id,
+            type,
+            label,
+            meta
+        };
+
+        nodeMap.set(id, node);
+        nodes.push(node);
+    }
+
+    addNode(
+        "string:" + item.text,
+        "string",
+        item.text.slice(0, 28),
+        item.text
     );
 
-    section.querySelectorAll("tbody tr")
-        .forEach(row => {
-            row.style.display =
-                row.innerText
-                    .toLowerCase()
-                    .includes(query)
-                    ? ""
-                    : "none";
+    for (const fn of item.functions) {
+        const id = "fn:" + functionKey(fn);
+
+        addNode(
+            id,
+            "function",
+            fn.name || "sub_" + hex(fn.rva),
+            fn
+        );
+
+        edges.push({
+            from: id,
+            to: "string:" + item.text,
+            type: "string"
         });
+
+        for (const call of fn.local_calls || []) {
+            const called = uniqueFunctions()
+                .find(x => Number(x.rva) === Number(call));
+
+            if (!called) {
+                continue;
+            }
+
+            const calledId = "fn:" + functionKey(called);
+
+            addNode(
+                calledId,
+                "function",
+                called.name || "sub_" + hex(called.rva),
+                called
+            );
+
+            edges.push({
+                from: id,
+                to: calledId,
+                type: "call"
+            });
+        }
+
+        for (const api of fn.imports_called || []) {
+            const importId = "import:" + api;
+
+            addNode(
+                importId,
+                "import",
+                api,
+                api
+            );
+
+            edges.push({
+                from: id,
+                to: importId,
+                type: "call"
+            });
+        }
+    }
+
+    drawGraph(nodes, edges);
+}
+
+function renderFunctionGraph(fn) {
+    const nodes = [];
+    const edges = [];
+    const nodeMap = new Map();
+
+    function addNode(id, type, label, meta) {
+        if (nodeMap.has(id)) {
+            return;
+        }
+
+        const node = {
+            id,
+            type,
+            label,
+            meta
+        };
+
+        nodeMap.set(id, node);
+        nodes.push(node);
+    }
+
+    const rootId = "fn:" + functionKey(fn);
+
+    addNode(
+        rootId,
+        "function",
+        fn.name || "sub_" + hex(fn.rva),
+        fn
+    );
+
+    for (const text of fn.strings_ref || []) {
+        const id = "string:" + text;
+
+        addNode(
+            id,
+            "string",
+            text.slice(0, 28),
+            text
+        );
+
+        edges.push({
+            from: rootId,
+            to: id,
+            type: "string"
+        });
+    }
+
+    for (const call of fn.local_calls || []) {
+        const called = uniqueFunctions()
+            .find(x => Number(x.rva) === Number(call));
+
+        if (!called) {
+            continue;
+        }
+
+        const id = "fn:" + functionKey(called);
+
+        addNode(
+            id,
+            "function",
+            called.name || "sub_" + hex(called.rva),
+            called
+        );
+
+        edges.push({
+            from: rootId,
+            to: id,
+            type: "call"
+        });
+    }
+
+    for (const api of fn.imports_called || []) {
+        const id = "import:" + api;
+
+        addNode(
+            id,
+            "import",
+            api,
+            api
+        );
+
+        edges.push({
+            from: rootId,
+            to: id,
+            type: "call"
+        });
+    }
+
+    drawGraph(nodes, edges);
+}
+
+function renderImportGraph(api) {
+    const nodes = [];
+    const edges = [];
+    const nodeMap = new Map();
+
+    function addNode(id, type, label, meta) {
+        if (nodeMap.has(id)) {
+            return;
+        }
+
+        const node = {
+            id,
+            type,
+            label,
+            meta
+        };
+
+        nodeMap.set(id, node);
+        nodes.push(node);
+    }
+
+    const rootId = "import:" + api;
+
+    addNode(
+        rootId,
+        "import",
+        api,
+        api
+    );
+
+    for (const fn of uniqueFunctions()) {
+        if (!(fn.imports_called || []).includes(api)) {
+            continue;
+        }
+
+        const id = "fn:" + functionKey(fn);
+
+        addNode(
+            id,
+            "function",
+            fn.name || "sub_" + hex(fn.rva),
+            fn
+        );
+
+        edges.push({
+            from: id,
+            to: rootId,
+            type: "call"
+        });
+
+        for (const text of fn.strings_ref || []) {
+            const stringId = "string:" + text;
+
+            addNode(
+                stringId,
+                "string",
+                text.slice(0, 28),
+                text
+            );
+
+            edges.push({
+                from: id,
+                to: stringId,
+                type: "string"
+            });
+        }
+    }
+
+    drawGraph(nodes, edges);
+}
+
+function drawGraph(nodes, edges) {
+    const graph = document.getElementById("graph");
+
+    if (!nodes.length) {
+        graph.innerHTML = `
+            <div class="empty">
+                لا توجد علاقات لعرضها
+            </div>
+        `;
+
+        return;
+    }
+
+    const width = graph.clientWidth || 700;
+    const height = graph.clientHeight || 700;
+
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(width, height) * .34;
+
+    const positions = new Map();
+
+    nodes.forEach((node, index) => {
+        const angle =
+            (Math.PI * 2 * index) / nodes.length;
+
+        positions.set(node.id, {
+            x: centerX + Math.cos(angle) * radius,
+            y: centerY + Math.sin(angle) * radius
+        });
+    });
+
+    const defs = `
+        <defs>
+            <marker
+                id="arrow"
+                markerWidth="8"
+                markerHeight="8"
+                refX="7"
+                refY="3"
+                orient="auto"
+            >
+                <path
+                    d="M0,0 L0,6 L8,3 z"
+                    fill="#647c91"
+                />
+            </marker>
+        </defs>
+    `;
+
+    const edgeSvg = edges.map(edge => {
+        const from = positions.get(edge.from);
+        const to = positions.get(edge.to);
+
+        if (!from || !to) {
+            return "";
+        }
+
+        return `
+            <line
+                class="edge ${edge.type}"
+                x1="${from.x}"
+                y1="${from.y}"
+                x2="${to.x}"
+                y2="${to.y}"
+                marker-end="url(#arrow)"
+            />
+        `;
+    }).join("");
+
+    const nodeSvg = nodes.map(node => {
+        const p = positions.get(node.id);
+        const widthNode = 150;
+        const heightNode = 46;
+
+        const selected =
+            selectedNode(node)
+                ? "selected"
+                : "";
+
+        return `
+            <g
+                class="node ${node.type} ${selected}"
+                transform="translate(
+                    ${p.x - widthNode / 2},
+                    ${p.y - heightNode / 2}
+                )"
+                onclick='selectGraphNode(${JSON.stringify(node.id)})'
+            >
+                <rect
+                    width="${widthNode}"
+                    height="${heightNode}"
+                    rx="8"
+                />
+
+                <text
+                    x="${widthNode / 2}"
+                    y="18"
+                >
+                    ${esc(shorten(node.label, 22))}
+                </text>
+
+                <text
+                    x="${widthNode / 2}"
+                    y="35"
+                    style="font-size:10px;fill:#9fb0bf"
+                >
+                    ${node.type}
+                </text>
+            </g>
+        `;
+    }).join("");
+
+    graph.innerHTML = `
+        <svg
+            viewBox="0 0 ${width} ${height}"
+            preserveAspectRatio="xMidYMid meet"
+        >
+            ${defs}
+            ${edgeSvg}
+            ${nodeSvg}
+        </svg>
+    `;
+}
+
+function selectedNode(node) {
+    if (!SELECTED) {
+        return false;
+    }
+
+    if (
+        node.type === "string" &&
+        SELECTED.type === "string"
+    ) {
+        return node.meta === SELECTED.value;
+    }
+
+    if (
+        node.type === "function" &&
+        SELECTED.type === "function"
+    ) {
+        return functionKey(node.meta) === SELECTED.key;
+    }
+
+    if (
+        node.type === "import" &&
+        SELECTED.type === "import"
+    ) {
+        return node.meta === SELECTED.value;
+    }
+
+    return false;
+}
+
+function selectGraphNode(id) {
+    if (id.startsWith("string:")) {
+        selectStringByValue(
+            id.slice("string:".length)
+        );
+        return;
+    }
+
+    if (id.startsWith("import:")) {
+        const api = id.slice("import:".length);
+
+        SELECTED = {
+            type: "import",
+            value: api,
+            data: api
+        };
+
+        renderAll();
+        return;
+    }
+
+    if (id.startsWith("fn:")) {
+        selectFunctionByKey(
+            id.slice("fn:".length)
+        );
+    }
+}
+
+function shorten(value, length) {
+    const text = String(value || "");
+
+    if (text.length <= length) {
+        return text;
+    }
+
+    return text.slice(0, length - 3) + "...";
 }
 </script>
-
 </body>
 </html>
