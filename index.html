@@ -3,82 +3,48 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ELF Hunter Analyzer</title>
+<title>ELF SO Web Analyzer</title>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.27.5/full/pyodide.js"></script>
 
 <style>
 :root {
   --bg: #080c12;
   --panel: #111923;
   --panel2: #182432;
-  --panel3: #0d141c;
   --border: #2b3b4c;
-  --text: #e9f0f6;
-  --muted: #91a0b0;
-  --green: #38dc88;
+  --text: #eaf1f7;
+  --muted: #93a2b2;
+  --green: #37dc87;
   --blue: #55adff;
   --yellow: #e8c15d;
   --red: #ff6262;
-  --orange: #ff9d4d;
-  --purple: #bd86ff;
-  --cyan: #60e5e5;
+  --orange: #ff9e4d;
+  --purple: #bf88ff;
 }
 
 * {
   box-sizing: border-box;
 }
 
-html,
 body {
   margin: 0;
-  min-height: 100%;
   background: var(--bg);
   color: var(--text);
   font-family: Tahoma, Arial, sans-serif;
 }
 
-body {
-  direction: rtl;
-}
-
-button,
-input,
-select {
-  font: inherit;
-}
-
-button,
-.file-button {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: 0.15s;
-}
-
-button:hover,
-button.active,
-.file-button:hover {
-  border-color: var(--green);
-  background: var(--green);
-  color: #06110a;
-}
-
-button {
-  padding: 10px 13px;
-  background: var(--panel2);
-  color: var(--text);
-}
-
 .app {
-  width: min(1800px, 100%);
+  max-width: 1800px;
   margin: auto;
   padding: 12px;
 }
 
 header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 15px;
+  align-items: center;
+  gap: 12px;
   flex-wrap: wrap;
   padding: 17px;
   border: 1px solid var(--border);
@@ -89,7 +55,7 @@ header {
 h1 {
   margin: 0;
   color: var(--green);
-  font-size: 24px;
+  font-size: 23px;
 }
 
 .subtitle {
@@ -98,15 +64,17 @@ h1 {
   font-size: 12px;
 }
 
-.upload-area {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+.file-button,
+button {
+  display: inline-block;
+  padding: 10px 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
 }
 
 .file-button {
-  display: inline-block;
-  padding: 11px 14px;
   background: var(--green);
   color: #06110a;
   font-weight: bold;
@@ -116,8 +84,19 @@ h1 {
   display: none;
 }
 
+button {
+  background: var(--panel2);
+  color: var(--text);
+}
+
+button:hover,
+button.active {
+  background: var(--green);
+  color: #06110a;
+}
+
 .status {
-  min-height: 25px;
+  min-height: 24px;
   margin: 10px 2px;
   color: var(--yellow);
   overflow-wrap: anywhere;
@@ -129,7 +108,7 @@ h1 {
   border: 1px solid #695828;
   border-radius: 8px;
   background: #282313;
-  color: #f4dc8c;
+  color: #f3db8a;
   font-size: 12px;
   line-height: 1.7;
 }
@@ -151,22 +130,16 @@ h1 {
   outline: none;
   background: var(--panel);
   color: var(--text);
-  direction: rtl;
-}
-
-#search:focus {
-  border-color: var(--green);
 }
 
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 8px;
-  margin-bottom: 11px;
+  margin-bottom: 10px;
 }
 
 .card {
-  min-width: 0;
   padding: 12px 8px;
   border: 1px solid var(--border);
   border-radius: 9px;
@@ -182,14 +155,14 @@ h1 {
 .card-value {
   margin-top: 7px;
   color: var(--green);
-  font-size: 19px;
+  font-size: 18px;
   font-weight: bold;
   overflow-wrap: anywhere;
 }
 
 .layout {
   display: grid;
-  grid-template-columns: 330px minmax(360px, 1fr) 430px;
+  grid-template-columns: 330px minmax(350px, 1fr) 430px;
   gap: 10px;
 }
 
@@ -203,7 +176,6 @@ h1 {
 
 .panel-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 11px;
@@ -216,32 +188,27 @@ h1 {
   font-weight: bold;
 }
 
-.panel-body {
-  padding: 12px;
-}
-
 .list {
   max-height: 710px;
   overflow: auto;
 }
 
-.list-item {
+.item {
   padding: 10px;
-  border-bottom: 1px solid #233240;
+  border-bottom: 1px solid #243240;
   cursor: pointer;
   direction: ltr;
   text-align: left;
   overflow-wrap: anywhere;
 }
 
-.list-item:hover,
-.list-item.selected {
+.item:hover,
+.item.selected {
   border-right: 3px solid var(--green);
   background: #203548;
 }
 
 .item-name {
-  color: var(--text);
   font-family: Consolas, monospace;
   font-size: 12px;
 }
@@ -262,39 +229,34 @@ h1 {
   font-weight: bold;
 }
 
-.badge-green {
+.green {
   background: var(--green);
   color: #06110a;
 }
 
-.badge-blue {
+.blue {
   background: var(--blue);
   color: #06110a;
 }
 
-.badge-yellow {
+.yellow {
   background: var(--yellow);
   color: #1d1605;
 }
 
-.badge-red {
+.red {
   background: var(--red);
-  color: #260606;
+  color: #270606;
 }
 
-.badge-orange {
+.orange {
   background: var(--orange);
-  color: #281507;
+  color: #2a1605;
 }
 
-.badge-purple {
+.purple {
   background: var(--purple);
-  color: #180b2b;
-}
-
-.badge-cyan {
-  background: var(--cyan);
-  color: #061515;
+  color: #190b2c;
 }
 
 .empty {
@@ -308,16 +270,15 @@ h1 {
   max-height: 710px;
   padding: 12px;
   overflow: auto;
-  background:
-    radial-gradient(circle at center, #182a3b 0, #0e171f 58%, #0a1016 100%);
+  background: radial-gradient(circle, #182b3d, #0b1219 75%);
 }
 
 .graph-title {
-  margin-bottom: 10px;
-  color: var(--yellow);
-  font-weight: bold;
+  margin-bottom: 12px;
   direction: ltr;
   text-align: left;
+  color: var(--yellow);
+  font-family: Consolas, monospace;
 }
 
 .graph-row {
@@ -330,8 +291,8 @@ h1 {
   direction: ltr;
 }
 
-.graph-node {
-  max-width: 260px;
+.node {
+  max-width: 270px;
   padding: 9px;
   border: 1px solid var(--blue);
   border-radius: 8px;
@@ -343,19 +304,14 @@ h1 {
   overflow-wrap: anywhere;
 }
 
-.graph-node.main {
+.node.main {
   border-color: var(--green);
   background: #16402b;
 }
 
-.graph-node.caller {
+.node.caller {
   border-color: var(--purple);
-  background: #3c2545;
-}
-
-.graph-node.callee {
-  border-color: var(--blue);
-  background: #17354a;
+  background: #3e2648;
 }
 
 .arrow {
@@ -364,14 +320,15 @@ h1 {
 }
 
 .details {
+  padding: 12px;
   line-height: 1.7;
 }
 
-.details-section {
-  margin-bottom: 17px;
+.section {
+  margin-bottom: 16px;
 }
 
-.details-title {
+.section-title {
   margin-bottom: 7px;
   padding-bottom: 5px;
   border-bottom: 1px solid var(--border);
@@ -383,16 +340,15 @@ h1 {
   display: grid;
   grid-template-columns: 125px 1fr;
   gap: 5px;
-  direction: rtl;
 }
 
 .kv b {
   color: var(--muted);
 }
 
-.mono,
 code,
-pre {
+pre,
+.mono {
   direction: ltr;
   text-align: left;
   font-family: Consolas, monospace;
@@ -404,7 +360,7 @@ code {
 }
 
 pre {
-  max-height: 350px;
+  max-height: 330px;
   margin: 0;
   padding: 10px;
   overflow: auto;
@@ -413,20 +369,18 @@ pre {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #090f15;
-  color: #bed5e6;
+  color: #bfd6e7;
   font-size: 11px;
 }
 
 .detail-list {
-  max-height: 270px;
+  max-height: 260px;
   overflow: auto;
-  padding-right: 4px;
 }
 
 .detail-line {
-  margin: 4px 0;
   padding: 5px 7px;
-  border-bottom: 1px solid #233240;
+  border-bottom: 1px solid #243240;
   direction: ltr;
   text-align: left;
   font-family: Consolas, monospace;
@@ -437,36 +391,19 @@ pre {
 .progress {
   width: 100%;
   height: 9px;
-  margin-top: 6px;
+  margin-top: 7px;
   overflow: hidden;
   border-radius: 9px;
   background: #263442;
 }
 
-.progress > span {
+.progress span {
   display: block;
   height: 100%;
-  border-radius: inherit;
   background: linear-gradient(90deg, var(--green), var(--yellow), var(--red));
 }
 
-.tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 9px;
-}
-
-.small {
-  padding: 7px 9px;
-  font-size: 11px;
-}
-
-.hidden {
-  display: none !important;
-}
-
-@media (max-width: 1200px) {
+@media(max-width:1200px) {
   .layout {
     grid-template-columns: 310px 1fr;
   }
@@ -476,7 +413,7 @@ pre {
   }
 }
 
-@media (max-width: 720px) {
+@media(max-width:720px) {
   .app {
     padding: 7px;
   }
@@ -505,74 +442,79 @@ pre {
 
 <header>
   <div>
-    <h1>ELF Hunter Analyzer</h1>
+    <h1>ELF / SO Analyzer</h1>
     <div class="subtitle">
-      واجهة HTML لتصفح تقرير h.py بدون تشغيل Python داخل GitHub Pages
+      تحليل المكتبة مباشرة داخل المتصفح
     </div>
   </div>
 
-  <div class="upload-area">
-    <label class="file-button" for="jsonInput">
-      فتح تقرير JSON
-      <input id="jsonInput" type="file" accept=".json,application/json">
-    </label>
-
-    <label class="file-button" for="txtInput">
-      فتح تقرير TXT
-      <input id="txtInput" type="file" accept=".txt,text/plain">
-    </label>
-  </div>
+  <label class="file-button">
+    اختيار ملف SO / ELF
+    <input id="elfFile" type="file" accept=".so,.elf,application/octet-stream">
+  </label>
 </header>
 
-<div class="notice">
-  استخدم زر «فتح تقرير JSON» واختر الملف الذي ينشئه h.py، مثل:
-  lib_التاريخ.json. التقرير يحتوي على protection و fix_crash و related وبقية نتائج التحليل.
+<div id="notice" class="notice">
+  جاري تجهيز Python داخل المتصفح...
 </div>
 
 <div id="status" class="status">
-  لم يتم تحميل أي تقرير بعد.
+  انتظر تحميل المحلل.
 </div>
 
 <div class="toolbar">
-  <input id="search" type="search" placeholder="ابحث باسم الدالة أو RVA أو String أو API..." autocomplete="off">
+  <input id="search" placeholder="ابحث عن دالة أو RVA أو API أو String">
 
-  <button class="mode-button active" data-mode="protection">الحماية</button>
-  <button class="mode-button" data-mode="crash">إصلاح الكراش</button>
-  <button class="mode-button" data-mode="related">Related</button>
-  <button class="mode-button" data-mode="all">كل الدوال</button>
+  <button class="mode active" data-mode="protection">
+    الحماية
+  </button>
 
-  <button id="clearButton">مسح التحديد</button>
+  <button class="mode" data-mode="crash">
+    الكراش
+  </button>
+
+  <button class="mode" data-mode="related">
+    Related
+  </button>
+
+  <button class="mode" data-mode="all">
+    كل الدوال
+  </button>
+
+  <button id="clear">
+    مسح التحديد
+  </button>
 </div>
 
 <div class="cards">
   <div class="card">
     <div class="card-label">الملف</div>
-    <div id="cardFile" class="card-value">-</div>
+    <div id="fileName" class="card-value">-</div>
   </div>
 
   <div class="card">
     <div class="card-label">المعمارية</div>
-    <div id="cardArch" class="card-value">-</div>
+    <div id="arch" class="card-value">-</div>
   </div>
 
   <div class="card">
     <div class="card-label">كل الدوال</div>
-    <div id="cardTotal" class="card-value">0</div>
+    <div id="total" class="card-value">0</div>
   </div>
 
   <div class="card">
     <div class="card-label">الحماية</div>
-    <div id="cardProtection" class="card-value">0</div>
+    <div id="protection" class="card-value">0</div>
   </div>
 
   <div class="card">
-    <div class="card-label">إصلاح الكراش</div>
-    <div id="cardCrash" class="card-value">0</div>
+    <div class="card-label">الكراش</div>
+    <div id="crash" class="card-value">0</div>
   </div>
 
   <div class="card">
     <div class="card-label">Related</div>
-    <div id="cardRelated" class="card-value">0</div>
+    <div id="related" class="card-value">0</div>
   </div>
 </div>
 
@@ -581,32 +523,32 @@ pre {
 <section class="panel">
   <div class="panel-header">
     <span id="listTitle" class="panel-title">الحماية</span>
-    <span id="listCount" class="badge badge-green">0</span>
+    <span id="listCount" class="badge green">0</span>
   </div>
 
   <div id="list" class="list">
-    <div class="empty">افتح ملف JSON الناتج من h.py</div>
+    <div class="empty">لم يتم تحليل أي ملف.</div>
   </div>
 </section>
 
 <section class="panel">
   <div class="panel-header">
     <span class="panel-title">العلاقات</span>
-    <span class="badge badge-yellow">Callers / Callees</span>
+    <span class="badge yellow">Callers / Callees</span>
   </div>
 
   <div id="graph" class="graph">
-    <div class="empty">اختر دالة من القائمة</div>
+    <div class="empty">اختر دالة لعرض العلاقات.</div>
   </div>
 </section>
 
 <section class="panel right-panel">
   <div class="panel-header">
-    <span class="panel-title">تفاصيل الدالة</span>
+    <span class="panel-title">التفاصيل</span>
   </div>
 
-  <div id="details" class="panel-body">
-    <div class="empty">لا توجد دالة محددة</div>
+  <div id="details">
+    <div class="empty">لا توجد تفاصيل.</div>
   </div>
 </section>
 
@@ -616,32 +558,13 @@ pre {
 <script>
 "use strict";
 
-const state = {
-  report: null,
-  mode: "protection",
-  selected: null,
-  visible: []
-};
+let pyodide = null;
+let report = null;
+let currentMode = "protection";
+let selected = null;
+let visibleItems = [];
 
 const $ = id => document.getElementById(id);
-
-function setStatus(message, error = false) {
-  const el = $("status");
-  el.textContent = message;
-  el.style.color = error ? "var(--red)" : "var(--yellow)";
-}
-
-function safe(value, fallback = "-") {
-  if (value === null || value === undefined || value === "") {
-    return fallback;
-  }
-  return String(value);
-}
-
-function numberValue(value, fallback = 0) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
-}
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -652,312 +575,240 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function hex(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) {
-    return safe(value);
-  }
-  return "0x" + n.toString(16).toUpperCase().padStart(6, "0");
+function safe(value, fallback = "-") {
+  return value === null ||
+    value === undefined ||
+    value === ""
+      ? fallback
+      : String(value);
 }
 
-function shortText(value, max = 100) {
-  const text = safe(value, "");
-  return text.length > max ? text.slice(0, max) + "..." : text;
+function hex(value) {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return safe(value);
+  }
+
+  return "0x" +
+    number.toString(16).toUpperCase().padStart(6, "0");
+}
+
+function setStatus(text, error = false) {
+  $("status").textContent = text;
+  $("status").style.color = error
+    ? "var(--red)"
+    : "var(--yellow)";
 }
 
 function tierClass(tier) {
   const value = String(tier || "").toLowerCase();
 
-  if (value === "critical") return "badge-red";
-  if (value === "high") return "badge-orange";
-  if (value === "medium") return "badge-yellow";
-  if (value === "low") return "badge-blue";
+  if (value === "critical") return "red";
+  if (value === "high") return "orange";
+  if (value === "medium") return "yellow";
+  if (value === "low") return "blue";
 
-  return "badge-purple";
+  return "purple";
 }
 
-function tierText(item) {
-  return item.tier_ar || item.tier || "غير مصنف";
-}
-
-function scoreOf(item) {
-  if (state.mode === "crash") {
-    return numberValue(
-      item.crash_confidence ??
-      item.confidence ??
-      item.crash_score
-    );
+function normalizeReport(data, fileName) {
+  if (!data || typeof data !== "object") {
+    throw new Error("نتيجة التحليل ليست JSON صحيحة.");
   }
 
-  return numberValue(
-    item.protection_confidence ??
+  return {
+    ...data,
+
+    file: data.file || fileName,
+
+    protection: Array.isArray(data.protection)
+      ? data.protection
+      : [],
+
+    fix_crash: Array.isArray(data.fix_crash)
+      ? data.fix_crash
+      : [],
+
+    related: Array.isArray(data.related)
+      ? data.related
+      : [],
+
+    all_functions: Array.isArray(data.all_functions)
+      ? data.all_functions
+      : (
+        Array.isArray(data.functions)
+          ? data.functions
+          : []
+      )
+  };
+}
+
+function reportItems() {
+  if (!report) return [];
+
+  if (currentMode === "crash") {
+    return report.fix_crash;
+  }
+
+  if (currentMode === "related") {
+    return report.related;
+  }
+
+  if (currentMode === "all") {
+    return report.all_functions;
+  }
+
+  return report.protection;
+}
+
+function score(item) {
+  return Number(
     item.confidence ??
-    item.score
+    item.protection_confidence ??
+    item.crash_confidence ??
+    item.score ??
+    item.crash_score ??
+    0
   );
 }
 
-function getStats(report) {
-  return report && report.stats && typeof report.stats === "object"
-    ? report.stats
-    : {};
-}
-
-function getReportList(report, key) {
-  if (!report || !Array.isArray(report[key])) {
-    return [];
-  }
-  return report[key];
-}
-
-function normalizeReport(data) {
-  if (!data || typeof data !== "object") {
-    throw new Error("ملف JSON ليس كائنًا صالحًا.");
-  }
-
-  const report = {
-    ...data
-  };
-
-  report.protection = Array.isArray(data.protection)
-    ? data.protection
-    : [];
-
-  report.fix_crash = Array.isArray(data.fix_crash)
-    ? data.fix_crash
-    : (
-      Array.isArray(data.crash)
-        ? data.crash
-        : []
-    );
-
-  report.related = Array.isArray(data.related)
-    ? data.related
-    : [];
-
-  report.all_functions = Array.isArray(data.all_functions)
-    ? data.all_functions
-    : (
-      Array.isArray(data.functions)
-        ? data.functions
-        : []
-    );
-
-  return report;
-}
-
-function updateCards() {
-  const report = state.report;
-
-  if (!report) {
-    $("cardFile").textContent = "-";
-    $("cardArch").textContent = "-";
-    $("cardTotal").textContent = "0";
-    $("cardProtection").textContent = "0";
-    $("cardCrash").textContent = "0";
-    $("cardRelated").textContent = "0";
-    return;
-  }
-
-  const stats = getStats(report);
-  const pStats = stats.protection || {};
-  const cStats = stats.crash || {};
-  const rStats = stats.related || {};
-
-  $("cardFile").textContent =
-    report.file
-      ? shortText(report.file.split("/").pop(), 20)
-      : "-";
-
-  $("cardArch").textContent =
-    report.arch || report.architecture || "-";
-
-  $("cardTotal").textContent =
-    report.total ??
-    stats.total_functions ??
-    report.all_functions.length ??
-    "0";
-
-  $("cardProtection").textContent =
-    pStats.total ??
-    report.protection.length;
-
-  $("cardCrash").textContent =
-    cStats.total ??
-    report.fix_crash.length;
-
-  $("cardRelated").textContent =
-    rStats.total ??
-    report.related.length;
-}
-
-function currentItems() {
-  if (!state.report) {
-    return [];
-  }
-
-  if (state.mode === "crash") {
-    return state.report.fix_crash;
-  }
-
-  if (state.mode === "related") {
-    return state.report.related;
-  }
-
-  if (state.mode === "all") {
-    return state.report.all_functions;
-  }
-
-  return state.report.protection;
-}
-
-function itemSearchText(item) {
-  const parts = [
+function searchable(item) {
+  return [
     item.name,
     item.rva,
     item.rva_fmt,
-    item.end,
-    item.source,
     item.tier,
     item.tier_ar,
     item.primary_category,
     item.related_to,
     item.confidence_reasons,
-    item.protection_confidence_reasons,
-    item.crash_confidence_reasons,
     ...(item.imports_called || []),
     ...(item.strings_ref || []),
     ...(item.decoded_strings || [])
-  ];
-
-  return parts
-    .filter(x => x !== null && x !== undefined)
+  ]
+    .filter(Boolean)
     .join(" ")
     .toLowerCase();
 }
 
+function updateCards() {
+  if (!report) return;
+
+  $("fileName").textContent =
+    String(report.file || "-").split("/").pop();
+
+  $("arch").textContent =
+    report.arch || report.architecture || "-";
+
+  $("total").textContent =
+    report.total ??
+    report.all_functions.length;
+
+  $("protection").textContent =
+    report.protection.length;
+
+  $("crash").textContent =
+    report.fix_crash.length;
+
+  $("related").textContent =
+    report.related.length;
+}
+
 function renderList() {
-  const list = $("list");
   const search = $("search").value.trim().toLowerCase();
 
-  let items = currentItems();
+  let items = reportItems();
 
   if (search) {
     items = items.filter(item =>
-      itemSearchText(item).includes(search)
+      searchable(item).includes(search)
     );
   }
 
-  state.visible = items;
+  visibleItems = items;
 
-  $("listCount").textContent = String(items.length);
-
-  const titleMap = {
+  const titles = {
     protection: "الحماية",
     crash: "إصلاح الكراش",
-    related: "Related / Wrappers",
+    related: "Related",
     all: "كل الدوال"
   };
 
-  $("listTitle").textContent = titleMap[state.mode];
+  $("listTitle").textContent = titles[currentMode];
+  $("listCount").textContent = items.length;
 
   if (!items.length) {
-    list.innerHTML = `
+    $("list").innerHTML = `
       <div class="empty">
-        لا توجد نتائج مطابقة.
+        لا توجد نتائج.
       </div>
     `;
     return;
   }
 
-  list.innerHTML = items.map((item, index) => {
-    const selected =
-      state.selected &&
-      sameItem(state.selected, item)
+  $("list").innerHTML = items.map((item, index) => {
+    const isSelected =
+      selected &&
+      Number(selected.rva) === Number(item.rva)
         ? "selected"
         : "";
 
-    const score = scoreOf(item);
-    const confidence = numberValue(
-      item.confidence ??
-      item.protection_confidence ??
-      item.crash_confidence ??
-      score
-    );
-
-    const category =
-      item.primary_category ||
-      Object.keys(item.signal_categories || {})[0] ||
-      "other";
+    const tier = item.tier_ar || item.tier || "غير مصنف";
+    const category = item.primary_category || "other";
 
     return `
-      <div class="list-item ${selected}" data-index="${index}">
+      <div class="item ${isSelected}" data-index="${index}">
         <div class="item-name">
           ${escapeHtml(item.name || ("sub_" + hex(item.rva)))}
         </div>
 
         <div class="item-sub">
-          RVA: ${escapeHtml(item.rva_fmt || hex(item.rva))}
+          RVA:
+          ${escapeHtml(item.rva_fmt || hex(item.rva))}
           |
-          Offset: ${escapeHtml(hex(item.file_offset || item.offset || 0))}
+          size=${escapeHtml(item.size ?? "-")}
         </div>
 
-        <div>
-          <span class="badge ${tierClass(item.tier)}">
-            ${escapeHtml(tierText(item))}
-          </span>
+        <span class="badge ${tierClass(item.tier)}">
+          ${escapeHtml(tier)}
+        </span>
 
-          <span class="badge badge-green">
-            ثقة ${confidence}%
-          </span>
+        <span class="badge green">
+          confidence=${escapeHtml(score(item))}%
+        </span>
 
-          <span class="badge badge-blue">
-            ${escapeHtml(category)}
-          </span>
-        </div>
+        <span class="badge blue">
+          ${escapeHtml(category)}
+        </span>
 
         <div class="item-sub">
           score=${escapeHtml(item.score ?? "-")}
           |
           crash=${escapeHtml(item.crash_score ?? "-")}
-          |
-          instructions=${escapeHtml(item.n_insns ?? "-")}
         </div>
       </div>
     `;
   }).join("");
 
-  list.querySelectorAll(".list-item").forEach(element => {
+  document.querySelectorAll(".item").forEach(element => {
     element.addEventListener("click", () => {
-      const index = Number(element.dataset.index);
-      selectItem(state.visible[index]);
+      selected = visibleItems[
+        Number(element.dataset.index)
+      ];
+
+      renderAll();
     });
   });
 }
 
-function sameItem(a, b) {
-  if (!a || !b) {
-    return false;
-  }
-
-  return Number(a.rva) === Number(b.rva) &&
-    String(a.name || "") === String(b.name || "");
-}
-
-function selectItem(item) {
-  state.selected = item || null;
-  renderList();
-  renderGraph();
-  renderDetails();
-}
-
 function renderGraph() {
-  const graph = $("graph");
-  const item = state.selected;
+  const item = selected;
 
   if (!item) {
-    graph.innerHTML = `
+    $("graph").innerHTML = `
       <div class="empty">
-        اختر دالة من القائمة لعرض العلاقات.
+        اختر دالة من القائمة.
       </div>
     `;
     return;
@@ -965,11 +816,7 @@ function renderGraph() {
 
   const callers = Array.isArray(item.callers)
     ? item.callers
-    : (
-      Array.isArray(item.callers_rva)
-        ? item.callers_rva
-        : []
-    );
+    : [];
 
   const callees = Array.isArray(item.callees)
     ? item.callees
@@ -979,30 +826,38 @@ function renderGraph() {
         : []
     );
 
-  const callerHtml = callers.slice(0, 20).map(value => `
-    <div class="graph-node caller">
-      ${escapeHtml(typeof value === "number" ? hex(value) : value)}
+  const callerNodes = callers.slice(0, 20).map(value => `
+    <div class="node caller">
+      ${escapeHtml(
+        typeof value === "number"
+          ? hex(value)
+          : value
+      )}
     </div>
   `).join("");
 
-  const calleeHtml = callees.slice(0, 20).map(value => `
-    <div class="graph-node callee">
-      ${escapeHtml(typeof value === "number" ? hex(value) : value)}
+  const calleeNodes = callees.slice(0, 20).map(value => `
+    <div class="node">
+      ${escapeHtml(
+        typeof value === "number"
+          ? hex(value)
+          : value
+      )}
     </div>
   `).join("");
 
-  graph.innerHTML = `
+  $("graph").innerHTML = `
     <div class="graph-title">
       ${escapeHtml(item.name || hex(item.rva))}
     </div>
 
     <div class="graph-row">
-      ${callerHtml || '<div class="empty">لا توجد Callers في التقرير</div>'}
+      ${callerNodes || '<div class="empty">لا يوجد Callers</div>'}
     </div>
 
     <div class="graph-row">
       ${callers.length ? '<div class="arrow">↓</div>' : ""}
-      <div class="graph-node main">
+      <div class="node main">
         ${escapeHtml(item.name || hex(item.rva))}
         <br>
         ${escapeHtml(item.rva_fmt || hex(item.rva))}
@@ -1011,14 +866,14 @@ function renderGraph() {
 
     <div class="graph-row">
       ${callees.length ? '<div class="arrow">↓</div>' : ""}
-      ${calleeHtml || '<div class="empty">لا توجد Callees في التقرير</div>'}
+      ${calleeNodes || '<div class="empty">لا يوجد Callees</div>'}
     </div>
   `;
 }
 
-function renderBadges(values, className = "badge-blue") {
+function badges(values, className = "blue") {
   if (!Array.isArray(values) || !values.length) {
-    return `<span class="badge badge-purple">لا يوجد</span>`;
+    return '<span class="badge purple">لا يوجد</span>';
   }
 
   return values.map(value => `
@@ -1028,56 +883,9 @@ function renderBadges(values, className = "badge-blue") {
   `).join("");
 }
 
-function renderEvidence(item) {
-  const evidence = Array.isArray(item.evidence)
-    ? item.evidence
-    : [];
-
-  if (!evidence.length) {
-    return `<div class="empty">لا توجد أدلة محفوظة في JSON.</div>`;
-  }
-
-  return `
-    <div class="detail-list">
-      ${evidence.slice(0, 80).map(entry => `
-        <div class="detail-line">
-          [+${escapeHtml(entry.weight ?? 0)}]
-          ${escapeHtml(entry.category || "")}
-          |
-          ${escapeHtml(entry.type || "")}
-          |
-          ${escapeHtml(entry.value || "")}
-        </div>
-      `).join("")}
-    </div>
-  `;
-}
-
-function renderCategoryScores(item) {
-  const scores = item.category_scores;
-
-  if (!scores || typeof scores !== "object") {
-    return `<div class="empty">لا توجد category_scores.</div>`;
-  }
-
-  const rows = Object.entries(scores)
-    .sort((a, b) => Number(b[1]) - Number(a[1]))
-    .map(([key, value]) => `
-      <div class="detail-line">
-        ${escapeHtml(key)} = ${escapeHtml(value)}
-      </div>
-    `)
-    .join("");
-
-  return `<div class="detail-list">${rows || "لا توجد بيانات"}</div>`;
-}
-
 function renderDetails() {
-  const details = $("details");
-  const item = state.selected;
-
-  if (!item) {
-    details.innerHTML = `
+  if (!selected) {
+    $("details").innerHTML = `
       <div class="empty">
         لا توجد دالة محددة.
       </div>
@@ -1085,25 +893,31 @@ function renderDetails() {
     return;
   }
 
-  const confidence = scoreOf(item);
+  const item = selected;
+
   const imports = item.imports_called || [];
   const strings = item.strings_ref || [];
   const decoded = item.decoded_strings || [];
   const conditions = item.conditions || [];
   const constants = item.constants || [];
-  const localCalls = item.local_calls || [];
   const syscalls = item.syscalls || [];
+  const evidence = item.evidence || [];
   const detectors = item.detectors || {};
 
   const activeDetectors = Object.entries(detectors)
     .filter(([, value]) => value)
-    .map(([key]) => key);
+    .map(([name]) => name);
 
-  details.innerHTML = `
+  const confidence = Math.max(
+    0,
+    Math.min(100, score(item))
+  );
+
+  $("details").innerHTML = `
     <div class="details">
 
-      <div class="details-section">
-        <div class="details-title">المعلومات الأساسية</div>
+      <div class="section">
+        <div class="section-title">المعلومات الأساسية</div>
 
         <div class="kv">
           <b>الاسم</b>
@@ -1112,14 +926,11 @@ function renderDetails() {
           <b>RVA</b>
           <code>${escapeHtml(item.rva_fmt || hex(item.rva))}</code>
 
-          <b>Offset</b>
-          <code>${escapeHtml(hex(item.file_offset || item.offset || 0))}</code>
-
           <b>النهاية</b>
           <code>${escapeHtml(hex(item.end || 0))}</code>
 
           <b>الحجم</b>
-          <span>${escapeHtml(item.size ?? "-")} بايت</span>
+          <span>${escapeHtml(item.size ?? "-")} bytes</span>
 
           <b>المصدر</b>
           <span>${escapeHtml(item.source || "-")}</span>
@@ -1127,31 +938,23 @@ function renderDetails() {
           <b>التصنيف</b>
           <span>${escapeHtml(item.primary_category || "-")}</span>
 
-          <b>Tier</b>
-          <span class="badge ${tierClass(item.tier)}">
-            ${escapeHtml(tierText(item))}
-          </span>
+          <b>الحقيقية</b>
+          <span>${escapeHtml(item.is_real ?? "-")}</span>
         </div>
       </div>
 
-      <div class="details-section">
-        <div class="details-title">الدرجات</div>
+      <div class="section">
+        <div class="section-title">الدرجات</div>
 
         <div class="kv">
-          <b>الثقة الحالية</b>
+          <b>Confidence</b>
           <span>${confidence}%</span>
 
-          <b>Protection score</b>
+          <b>Protection</b>
           <span>${escapeHtml(item.score ?? "-")}</span>
 
-          <b>Crash score</b>
+          <b>Crash</b>
           <span>${escapeHtml(item.crash_score ?? "-")}</span>
-
-          <b>Protection confidence</b>
-          <span>${escapeHtml(item.protection_confidence ?? "-")}</span>
-
-          <b>Crash confidence</b>
-          <span>${escapeHtml(item.crash_confidence ?? "-")}</span>
 
           <b>Signal raw</b>
           <span>${escapeHtml(item.signal_raw ?? "-")}</span>
@@ -1159,7 +962,7 @@ function renderDetails() {
           <b>Context raw</b>
           <span>${escapeHtml(item.context_raw ?? "-")}</span>
 
-          <b>التعليمات</b>
+          <b>Instructions</b>
           <span>${escapeHtml(item.n_insns ?? "-")}</span>
 
           <b>Callers</b>
@@ -1170,12 +973,13 @@ function renderDetails() {
         </div>
 
         <div class="progress">
-          <span style="width:${Math.max(0, Math.min(100, confidence))}%"></span>
+          <span style="width:${confidence}%"></span>
         </div>
       </div>
 
-      <div class="details-section">
-        <div class="details-title">سبب الثقة</div>
+      <div class="section">
+        <div class="section-title">سبب التحليل</div>
+
         <pre>${escapeHtml(
           item.confidence_reasons ||
           item.protection_confidence_reasons ||
@@ -1184,86 +988,99 @@ function renderDetails() {
         )}</pre>
       </div>
 
-      <div class="details-section">
-        <div class="details-title">
+      <div class="section">
+        <div class="section-title">
           Detectors (${activeDetectors.length})
         </div>
-        ${renderBadges(activeDetectors, "badge-orange")}
+
+        ${badges(activeDetectors, "orange")}
       </div>
 
-      <div class="details-section">
-        <div class="details-title">
-          APIs / Imports (${imports.length})
+      <div class="section">
+        <div class="section-title">
+          Imports / APIs (${imports.length})
         </div>
-        ${renderBadges(imports, "badge-blue")}
+
+        ${badges(imports, "blue")}
       </div>
 
-      <div class="details-section">
-        <div class="details-title">
+      <div class="section">
+        <div class="section-title">
           Strings (${strings.length})
         </div>
-        ${renderBadges(strings, "badge-yellow")}
+
+        ${badges(strings, "yellow")}
       </div>
 
-      <div class="details-section">
-        <div class="details-title">
+      <div class="section">
+        <div class="section-title">
           Decoded Strings (${decoded.length})
         </div>
-        ${renderBadges(decoded, "badge-purple")}
+
+        ${badges(decoded, "purple")}
       </div>
 
-      <div class="details-section">
-        <div class="details-title">
+      <div class="section">
+        <div class="section-title">
+          Evidence (${evidence.length})
+        </div>
+
+        <div class="detail-list">
+          ${
+            evidence.length
+              ? evidence.map(entry => `
+                <div class="detail-line">
+                  [+${escapeHtml(entry.weight ?? 0)}]
+                  ${escapeHtml(entry.category || "")}
+                  |
+                  ${escapeHtml(entry.type || "")}
+                  |
+                  ${escapeHtml(entry.value || "")}
+                </div>
+              `).join("")
+              : '<div class="empty">لا يوجد</div>'
+          }
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">
           Conditions (${conditions.length})
         </div>
-        ${conditions.length
-          ? `<pre>${escapeHtml(JSON.stringify(conditions, null, 2))}</pre>`
-          : '<div class="empty">لا توجد شروط محفوظة.</div>'}
+
+        <pre>${escapeHtml(
+          JSON.stringify(conditions, null, 2)
+        )}</pre>
       </div>
 
-      <div class="details-section">
-        <div class="details-title">
+      <div class="section">
+        <div class="section-title">
           Constants (${constants.length})
         </div>
-        ${constants.length
-          ? `<pre>${escapeHtml(JSON.stringify(constants, null, 2))}</pre>`
-          : '<div class="empty">لا توجد ثوابت محفوظة.</div>'}
+
+        <pre>${escapeHtml(
+          JSON.stringify(constants, null, 2)
+        )}</pre>
       </div>
 
-      <div class="details-section">
-        <div class="details-title">
+      <div class="section">
+        <div class="section-title">
           Syscalls (${syscalls.length})
         </div>
-        ${syscalls.length
-          ? `<pre>${escapeHtml(JSON.stringify(syscalls, null, 2))}</pre>`
-          : '<div class="empty">لا توجد Syscalls محفوظة.</div>'}
+
+        <pre>${escapeHtml(
+          JSON.stringify(syscalls, null, 2)
+        )}</pre>
       </div>
 
-      <div class="details-section">
-        <div class="details-title">
-          Local Calls (${localCalls.length})
+      <div class="section">
+        <div class="section-title">
+          JSON الدالة
         </div>
-        ${renderBadges(
-          localCalls.map(value =>
-            typeof value === "number" ? hex(value) : value
-          ),
-          "badge-cyan"
-        )}
-      </div>
 
-      <div class="details-section">
-        <div class="details-title">Evidence</div>
-        ${renderEvidence(item)}
-      </div>
-
-      <div class="details-section">
-        <div class="details-title">Category Scores</div>
-        ${renderCategoryScores(item)}
-      </div>
-
-      <div class="details-section">
-        <div class="details-title">JSON الخاص بالدالة</div>
-        <pre>${escapeHtml(JSON.stringify(item, null, 2))}</pre>
+        <pre>${escapeHtml(
+          JSON.stringify(item, null, 2)
+        )}</pre>
       </div>
 
     </div>
@@ -1277,138 +1094,184 @@ function renderAll() {
   renderDetails();
 }
 
-function loadReport(data, filename) {
-  state.report = normalizeReport(data);
-  state.selected = null;
-  state.mode = "protection";
+async function initializePython() {
+  try {
+    setStatus("جاري تحميل Python داخل المتصفح...");
 
-  document.querySelectorAll(".mode-button").forEach(button => {
-    button.classList.toggle(
-      "active",
-      button.dataset.mode === state.mode
+    pyodide = await loadPyodide();
+
+    $("notice").textContent =
+      "تم تحميل Python. اختر ملف SO أو ELF للتحليل.";
+
+    setStatus("المحلل جاهز.");
+  } catch (error) {
+    console.error(error);
+
+    $("notice").textContent =
+      "فشل تحميل Python من CDN.";
+
+    setStatus(
+      "فشل تشغيل Pyodide: " + error.message,
+      true
     );
-  });
-
-  setStatus(
-    `تم فتح التقرير بنجاح: ${filename} | ` +
-    `Protection=${state.report.protection.length} | ` +
-    `Crash=${state.report.fix_crash.length} | ` +
-    `Related=${state.report.related.length}`
-  );
-
-  renderAll();
+  }
 }
 
-async function handleJsonFile(event) {
-  event.preventDefault();
-  event.stopPropagation();
+async function analyzeFile(file) {
+  if (!pyodide) {
+    throw new Error(
+      "Python لم يكتمل تحميله بعد. انتظر قليلًا."
+    );
+  }
 
-  const file = event.target.files && event.target.files[0];
+  const bytes = new Uint8Array(
+    await file.arrayBuffer()
+  );
+
+  if (
+    bytes.length < 4 ||
+    bytes[0] !== 0x7f ||
+    bytes[1] !== 0x45 ||
+    bytes[2] !== 0x4c ||
+    bytes[3] !== 0x46
+  ) {
+    throw new Error(
+      "الملف المختار ليس ELF أو SO صالحًا."
+    );
+  }
+
+  pyodide.globals.set(
+    "web_binary_data",
+    bytes
+  );
+
+  pyodide.globals.set(
+    "web_file_name",
+    file.name
+  );
+
+  const resultText = await pyodide.runPythonAsync(`
+import json
+
+try:
+    import h
+except Exception as import_error:
+    json.dumps({
+        "ok": False,
+        "error": "تعذر استيراد h.py: " + str(import_error)
+    }, ensure_ascii=False)
+else:
+    try:
+        if not hasattr(h, "analyze_bytes_for_web"):
+            raise Exception(
+                "الدالة analyze_bytes_for_web غير موجودة داخل h.py"
+            )
+
+        result = h.analyze_bytes_for_web(
+            bytes(web_binary_data),
+            str(web_file_name)
+        )
+
+        result if isinstance(result, str) else json.dumps(
+            result,
+            ensure_ascii=False,
+            default=str
+        )
+    except Exception as analysis_error:
+        json.dumps({
+            "ok": False,
+            "error": str(analysis_error)
+        }, ensure_ascii=False)
+`);
+
+  pyodide.globals.delete("web_binary_data");
+  pyodide.globals.delete("web_file_name");
+
+  const data = JSON.parse(resultText);
+
+  if (data.ok === false) {
+    throw new Error(data.error || "فشل التحليل.");
+  }
+
+  return data;
+}
+
+$("elfFile").addEventListener("change", async event => {
+  const file = event.target.files?.[0];
 
   if (!file) {
     return;
   }
 
   try {
-    setStatus(`جاري قراءة ${file.name}...`);
+    setStatus(
+      `جاري تحليل ${file.name}... لا تغلق الصفحة.`
+    );
 
-    const text = await file.text();
+    const data = await analyzeFile(file);
 
-    if (!text.trim()) {
-      throw new Error("ملف JSON فارغ.");
-    }
+    report = normalizeReport(data, file.name);
+    selected = null;
+    currentMode = "protection";
 
-    const data = JSON.parse(text);
+    document.querySelectorAll(".mode").forEach(button => {
+      button.classList.toggle(
+        "active",
+        button.dataset.mode === currentMode
+      );
+    });
 
-    loadReport(data, file.name);
+    setStatus(
+      `اكتمل التحليل: ${file.name} | ` +
+      `Protection=${report.protection.length} | ` +
+      `Crash=${report.fix_crash.length} | ` +
+      `Related=${report.related.length}`
+    );
+
+    renderAll();
   } catch (error) {
     console.error(error);
 
     setStatus(
-      "فشل فتح JSON: " + (error.message || error),
+      "فشل تحليل الملف: " + error.message,
       true
     );
 
     alert(
-      "فشل فتح ملف JSON.
+      "فشل التحليل:
 
 " +
-      (error.message || error)
+      error.message
     );
   }
 
   event.target.value = "";
-}
+});
 
-async function handleTxtFile(event) {
-  event.preventDefault();
-  event.stopPropagation();
+$("search").addEventListener("input", renderList);
 
-  const file = event.target.files && event.target.files[0];
+document.querySelectorAll(".mode").forEach(button => {
+  button.addEventListener("click", () => {
+    currentMode = button.dataset.mode;
+    selected = null;
 
-  if (!file) {
-    return;
-  }
-
-  try {
-    const text = await file.text();
-
-    $("details").innerHTML = `
-      <div class="details">
-        <div class="details-section">
-          <div class="details-title">
-            محتوى ${escapeHtml(file.name)}
-          </div>
-          <pre>${escapeHtml(text)}</pre>
-        </div>
-      </div>
-    `;
-
-    setStatus(`تم فتح التقرير النصي: ${file.name}`);
-  } catch (error) {
-    setStatus(
-      "فشل فتح TXT: " + (error.message || error),
-      true
-    );
-  }
-
-  event.target.value = "";
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  $("jsonInput").addEventListener("change", handleJsonFile);
-  $("txtInput").addEventListener("change", handleTxtFile);
-
-  $("search").addEventListener("input", () => {
-    renderList();
-  });
-
-  document.querySelectorAll(".mode-button").forEach(button => {
-    button.addEventListener("click", () => {
-      state.mode = button.dataset.mode;
-      state.selected = null;
-
-      document.querySelectorAll(".mode-button").forEach(other => {
-        other.classList.toggle(
-          "active",
-          other === button
-        );
-      });
-
-      renderAll();
+    document.querySelectorAll(".mode").forEach(other => {
+      other.classList.toggle(
+        "active",
+        other === button
+      );
     });
-  });
 
-  $("clearButton").addEventListener("click", () => {
-    state.selected = null;
     renderAll();
   });
-
-  document.addEventListener("submit", event => {
-    event.preventDefault();
-    event.stopPropagation();
-  }, true);
 });
+
+$("clear").addEventListener("click", () => {
+  selected = null;
+  renderAll();
+});
+
+initializePython();
 </script>
 </body>
 </html>
